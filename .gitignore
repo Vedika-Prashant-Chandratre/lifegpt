@@ -1,0 +1,8 @@
+# Environment configuration file (contains secrets)
+.env
+
+# XAMPP / Apache logs or temp files
+*.log
+tmp/
+.DS_Store
+Thumbs.db
