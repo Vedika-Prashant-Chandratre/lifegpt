@@ -1,112 +1,102 @@
-# LifeGPT - AI-Powered Collective Wisdom Platform
+# LifeGPT 🧠
 
-LifeGPT is a web application designed to interview individuals (primarily adults aged 50+) about their life lessons, turning points, achievements, and funny moments. The wisdom collected is summarized by AI and prepared for an anonymized search experience.
+### AI-Powered Collective Wisdom Platform
 
-This project is built using native **PHP 8.x**, **MySQL**, **Vanilla JavaScript**, and browser speech APIs, running locally on **XAMPP**.
+> **“Your life has answers someone else needs.”**
+> *Powered by people. Organized by AI.*
 
----
+LifeGPT is an experimental **FiftyIsNifty** platform that uses AI to interview people about their life experiences, lessons, decisions, achievements, regrets, and advice. Approved and anonymized experiences are organized into a knowledge base for the future **Ask LifeGPT** RAG experience.
 
-## Features Implemented (Starting Part)
+## ✨ Features
 
-1. **Database & Configuration Setup**:
-   - Environment loader using `.env` files.
-   - PDO database connection manager supporting transactions, parameters, and friendly error handlers.
-   - Initial database migrations (`lg_` prefix) and seed files for personas and topics.
-   - Automatic database setup script (`database/setup_db.php`) and administrator seeder (`database/seeds/seed_admin.php`).
-2. **Accessible Styling & Layout**:
-   - Styling (`assets/css/lifegpt.css`) matching high-fidelity Figma specs.
-   - Optimizations for older adults: Inter/Outfit fonts, high contrast, visible focus outlines, and touch-target padding (minimum `48px` height).
-   - Responsive design covering desktop, tablet, and mobile views.
-   - Shared responsive header navigation and footer components.
-3. **Static & Information Pages**:
-   - Conversational Homepage (`index.php`).
-   - Detailed guide page (`how-it-works.php`).
-   - Policies (`privacy.php`, `terms.php`).
-4. **Granular Privacy & Consent**:
-   - Versioned consent choices (`interview/consent.php`) mapping storage, search/RAG, and quotes.
-   - Multiple attribution choices (Anonymous, First Name, Nickname, Full Name, Private).
-5. **Robust Authentication**:
-   - Optional registration (`account/register.php`), log in (`login.php`), and logout (`logout.php`).
-   - Mock verification flows for email verification (`verify-email.php`) and password resets (`forgot-password.php`, `reset-password.php`).
-   - User settings profile panel with password update and account deletion (`account/profile.php`).
-6. **Interviewer Setup Flow**:
-   - Welcoming start page (`interview/start.php`).
-   - Persona selection grid (`interview/choose-persona.php`) displaying the 5 seeded personalities.
-   - Topic and length selectors (`interview/choose-topic.php`).
-7. **Interactive Conversation Screen**:
-   - Speech UI layout (`interview/conversation.php`).
-   - Client JS Speech Recognition (`assets/js/speech-recognition.js`) for browser transcribing.
-   - Client JS Speech Synthesis (`assets/js/speech-synthesis.js`) for voice output.
-   - Main controller (`assets/js/interview.js`) handling progress bars, dialog, and voice review prompts ("Use, Edit, Try Again").
-8. **Interviewer & Summary Engine**:
-   - Server-side context builder and OpenAI API client (`includes/openai.php`, `includes/interview-engine.php`).
-   - **Local Fallback Mode**: If no OpenAI API key is present in `.env`, the system automatically activates a local question-bank engine that serves logical follow-up questions tailored to your chosen topic, alongside a dynamic summary compiler. This lets you test the entire conversation flow offline.
-9. **Form API Endpoints**:
-   - `api/interview-next-question.php`, `api/interview-save-answer.php`, `api/interview-complete.php`, and `api/interview-summary.php` are fully implemented with authorization checks and CSRF validation.
+* 🤖 AI-powered conversational interviews
+* 🎭 5 interviewer personalities
+* 🎤 Voice input with browser speech capabilities
+* ⌨️ Text input with voice fallback
+* 👤 Anonymous and registered-user interviews
+* 💾 Save, pause, resume, edit, and delete interviews
+* 📝 AI-generated summaries, themes, lessons, and quotes
+* 🔐 Granular consent and attribution controls
+* 👨‍💼 Admin moderation and knowledge approval
+* 🔎 Ask LifeGPT — limited RAG prototype
 
----
+## 🛠️ Tech Stack
 
-## Local Setup & Installation
+* **Backend:** PHP 8.x
+* **Database:** MySQL
+* **Frontend:** HTML, CSS, JavaScript
+* **AI:** OpenAI API
+* **Voice:** Browser Speech Recognition & Speech Synthesis
+* **Environment:** XAMPP / Apache
 
-Follow these steps to run LifeGPT on XAMPP:
+## 📁 Project Structure
 
-### 1. Project Location
-Copy the project folder into your Apache document root:
-```
-C:\xampp\htdocs\lifegpt\
+```text
+lifegpt/
+├── interview/      # Interview experience
+├── ask/            # Ask LifeGPT
+├── account/        # Authentication & profile
+├── dashboard/      # User dashboard
+├── admin/          # Admin & moderation
+├── api/             # Backend API endpoints
+├── includes/        # Core PHP services
+├── assets/          # CSS & JavaScript
+└── cron/            # Background tasks
 ```
 
-### 2. Startup XAMPP Services
-Open the **XAMPP Control Panel** and start:
-1. **Apache**
-2. **MySQL**
+## 🚀 Local Setup
 
-### 3. Initialize Database
-You can set up the database and import migrations/seeds in one step. Open your browser and navigate to:
-```
-http://localhost/lifegpt/database/setup_db.php
-```
-*Alternatively, you can run this script via your terminal command:*
+### 1. Clone the project
+
 ```bash
-C:\xampp\php\php.exe C:\xampp\htdocs\lifegpt\database\setup_db.php
+git clone <repository-url>
+cd lifegpt
 ```
 
-### 4. Create Default Administrator Account
-Run the administrator user seeder script by navigating to:
-```
-http://localhost/lifegpt/database/seeds/seed_admin.php
-```
-*Or run it via command line:*
-```bash
-C:\xampp\php\php.exe C:\xampp\htdocs\lifegpt\database\seeds\seed_admin.php
-```
-- **Admin Email**: `admin@lifegpt.local`
-- **Admin Password**: `adminpassword123`
+### 2. XAMPP
 
-### 5. Access the Platform
-Open your browser and visit:
+Place the project in:
+
+```text
+C:\xampp\htdocs\lifegpt
 ```
+
+Start **Apache** and **MySQL** from XAMPP.
+
+### 3. Database
+
+Create the MySQL database and import the project's SQL migrations/seed data.
+
+### 4. Configuration
+
+Configure your database credentials and OpenAI API key in the environment/configuration file.
+
+> **Never commit API keys, passwords, or other secrets to Git.**
+
+### 5. Run
+
+Open:
+
+```text
 http://localhost/lifegpt/
 ```
 
----
+## 🔐 Privacy & Security
 
-## Configuration (`.env`)
+LifeGPT is designed with contributor control and privacy in mind:
 
-You can edit database credentials and set up your OpenAI API key in:
-`C:\xampp\htdocs\lifegpt\.env`
+* Consent is granular, versioned, and withdrawable.
+* Only contributor-approved transcripts are stored.
+* Raw audio is not stored in the MVP.
+* Admin approval is required before content enters RAG.
+* Deleted or withdrawn content must be excluded from retrieval.
+* PDO prepared statements and CSRF protection are required.
 
-```ini
-APP_ENV=local
-APP_URL=http://localhost/lifegpt
+## 🎯 Core Principle
 
-# Database settings (Default XAMPP)
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=lifegpt
-DB_USER=root
-DB_PASS=
+**The wisdom comes from people. AI helps ask better questions, organize the answers, preserve contributor control, and make relevant experiences easier to discover.**
 
-# OpenAI API (Optional for offline mock mode)
-OPENAI_API_KEY=your_openai_api_key_here
-```
+## ⚠️ Disclaimer
+
+LifeGPT is an experimental platform. Its responses represent individual lived experiences and should not be treated as professional medical, legal, financial, or mental-health advice.
+LifeGPT is an experimental platform. Its responses represent individual lived experiences and **should not be treated as professional medical, legal, financial, or mental-health advice**.
