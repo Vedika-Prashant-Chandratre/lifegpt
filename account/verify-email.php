@@ -51,10 +51,10 @@ if (!empty($token)) {
                 $_SESSION['user_data'] = $user;
                 session_regenerate_id(true);
                 
-                $success = "Your email has been verified successfully! Redirecting you to your dashboard...";
+                $success = "Your email has been verified successfully! Redirecting you to complete your profile...";
                 
-                // Redirect after 3 seconds
-                header("Refresh: 3; url=" . APP_URL . "/dashboard/");
+                // Redirect after 2 seconds to Profile Form
+                header("Refresh: 2; url=" . APP_URL . "/account/profile.php?new_account=1");
                 
             } catch (Exception $e) {
                 DB::rollBack();
@@ -74,20 +74,20 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div style="max-width: 500px; margin: 4rem auto; text-align: center;">
-    <div class="card">
+    <div class="card" style="border-top: 5px solid var(--color-primary); padding: 2.5rem;">
         <?php if (!empty($success)): ?>
-            <div style="font-size: 4rem; color: var(--color-success); margin-bottom: 1.5rem;">✔</div>
-            <h1>Verified!</h1>
-            <p><?php echo htmlspecialchars($success); ?></p>
+            <div style="width: 64px; height: 64px; background: var(--color-mint-bg); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--color-success); margin-bottom: 1.25rem;">✔</div>
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">Email Verified!</h1>
+            <p class="text-sm"><?php echo htmlspecialchars($success); ?></p>
             <div style="margin-top: 2rem;">
-                <a href="<?php echo APP_URL; ?>/dashboard/" class="btn btn-primary">Go to Dashboard Now</a>
+                <a href="<?php echo APP_URL; ?>/account/profile.php?new_account=1" class="btn btn-primary">Continue to Member Profile →</a>
             </div>
         <?php else: ?>
-            <div style="font-size: 4rem; color: var(--color-danger); margin-bottom: 1.5rem;">✕</div>
-            <h1>Verification Failed</h1>
-            <p><?php echo htmlspecialchars($error); ?></p>
+            <div style="width: 64px; height: 64px; background: #fff1f2; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--color-danger); margin-bottom: 1.25rem;">✕</div>
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">Verification Failed</h1>
+            <p class="text-sm"><?php echo htmlspecialchars($error); ?></p>
             <div style="margin-top: 2rem;">
-                <a href="<?php echo APP_URL; ?>/account/login.php" class="btn btn-primary">Return to Login</a>
+                <a href="<?php echo APP_URL; ?>/account/login.php" class="btn btn-primary">Return to Sign In</a>
             </div>
         <?php endif; ?>
     </div>

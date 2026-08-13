@@ -1,78 +1,48 @@
 <?php
 /**
- * LifeGPT - OpenAI-powered Interview Engine
- * Builds conversation context, calls OpenAI for structured JSON questions,
- * and maintains a robust local fallback bank for offline/development testing.
+ * LifeGPT - Interview Engine Service
+ * Handles conversation state management, next question generation, and summary extraction.
  */
-
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/openai.php';
 
 class InterviewEngine {
+
     /**
-     * Determine next question or complete state for an interview session
+     * Determine target question limit based on duration type
+     */
+    public static function getTargetLimit(string $durationType): int {
+        switch ($durationType) {
+            case 'quick':
+                return 4;
+            case 'deep':
+                return 8;
+            case 'standard':
+            default:
+                return 5;
+        }
+    }
+
+    /**
+     * Retrieve or generate the next interviewer question
      */
     public static function getNextQuestion(array $interview): array {
         $interviewId = (int)$interview['interview_id'];
-        $uuid = $interview['uuid'];
+        $targetLimit = self::getTargetLimit($interview['duration_type']);
         
-        // 1. Fetch current conversation messages in order
+        // 1. Fetch existing messages for this interview
         $messages = DB::fetchAll(
-            "SELECT * FROM lg_interview_messages WHERE interview_id = :id ORDER BY sequence ASC",
+            "SELECT sequence, role, text, question_type, created_at 
+             FROM lg_interview_messages 
+             WHERE interview_id = :id 
+             ORDER BY sequence ASC",
             ['id' => $interviewId]
         );
         
         $totalMessages = count($messages);
         
-        // 2. Determine limits based on duration settings
-        $targetLimit = 8; // standard
-        if ($interview['duration_type'] === 'quick') {
-            $targetLimit = 4;
-        } elseif ($interview['duration_type'] === 'deep') {
-            $targetLimit = 12;
-        }
-        
-        // 3. Case A: Brand new conversation. First question is the persona's greeting.
-        if ($totalMessages === 0) {
-            $greeting = $interview['greeting'];
-            
-            DB::insert(
-                "INSERT INTO lg_interview_messages (interview_id, sequence, role, text, question_type) 
-                 VALUES (:id, 1, 'interviewer', :text, 'greeting')",
-                ['id' => $interviewId, 'text' => $greeting]
-            );
-            
-            return [
-                'success' => true,
-                'next_question' => $greeting,
-                'question_sequence' => 1,
-                'target_limit' => $targetLimit,
-                'interview_complete' => false
-            ];
-        }
-        
-        $lastMessage = $messages[$totalMessages - 1];
-        
-        // 4. Case B: Page reload or consecutive requests without user answering yet.
-        // If the last role was 'interviewer', return that same question.
-        if ($lastMessage['role'] === 'interviewer') {
-            // Count interviewer questions asked
-            $questionSeq = 0;
-            foreach ($messages as $msg) {
-                if ($msg['role'] === 'interviewer') $questionSeq++;
-            }
-            
-            return [
-                'success' => true,
-                'next_question' => $lastMessage['text'],
-                'question_sequence' => $questionSeq,
-                'target_limit' => $targetLimit,
-                'interview_complete' => false
-            ];
-        }
-        
-        // 5. Case C: Contributor has answered. We need to generate the NEXT interviewer question.
-        // Count interviewer questions asked so far
+        // 2. Count questions asked by interviewer so far
         $interviewerQuestionsCount = 0;
         foreach ($messages as $msg) {
             if ($msg['role'] === 'interviewer') {
@@ -80,8 +50,51 @@ class InterviewEngine {
             }
         }
         
-        // Check if we hit the limit
+        // 3. First question case (Initial greeting + starter question)
+        if ($interviewerQuestionsCount === 0) {
+            $greeting = $interview['greeting'] ?? "Hello! Thank you for sharing your story today.";
+            $starterPrompt = $interview['starter_prompt'] ?? "What is a key experience or turning point you would like to share?";
+            
+            $initialQuestion = $greeting . " " . $starterPrompt;
+            
+            DB::insert(
+                "INSERT INTO lg_interview_messages (interview_id, sequence, role, text, question_type) 
+                 VALUES (:id, 1, 'interviewer', :text, 'starter')",
+                [
+                    'id' => $interviewId,
+                    'text' => $initialQuestion
+                ]
+            );
+            
+            return [
+                'success' => true,
+                'next_question' => $initialQuestion,
+                'question_sequence' => 1,
+                'target_limit' => $targetLimit,
+                'interview_complete' => false
+            ];
+        }
+
+        // 4. Check if the last message in DB is from interviewer (awaiting user response)
+        $lastMessage = end($messages);
+        if ($lastMessage && $lastMessage['role'] === 'interviewer') {
+            return [
+                'success' => true,
+                'next_question' => $lastMessage['text'],
+                'question_sequence' => $interviewerQuestionsCount,
+                'target_limit' => $targetLimit,
+                'interview_complete' => false
+            ];
+        }
+        
+        // 5. Check if target limit is reached
         if ($interviewerQuestionsCount >= $targetLimit) {
+            DB::query(
+                "UPDATE lg_interviews SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE interview_id = :id",
+                ['id' => $interviewId]
+            );
+            self::generateSummary($interview);
+
             return [
                 'success' => true,
                 'next_question' => '',
@@ -106,8 +119,13 @@ class InterviewEngine {
             $isComplete = $aiResponse['interview_complete'] ?? false;
             $themes = $aiResponse['themes'] ?? [];
             
-            // If OpenAI decides it's complete or next question is empty, end early
             if ($isComplete || empty($nextQuestion)) {
+                DB::query(
+                    "UPDATE lg_interviews SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE interview_id = :id",
+                    ['id' => $interviewId]
+                );
+                self::generateSummary($interview);
+
                 return [
                     'success' => true,
                     'next_question' => '',
@@ -117,7 +135,6 @@ class InterviewEngine {
                 ];
             }
             
-            // Save AI message to database
             DB::insert(
                 "INSERT INTO lg_interview_messages (interview_id, sequence, role, text, question_type) 
                  VALUES (:id, :seq, 'interviewer', :text, :qtype)",
@@ -129,7 +146,6 @@ class InterviewEngine {
                 ]
             );
             
-            // Parse and save themes to mapping
             self::saveThemes($interviewId, $themes);
             
             return [
@@ -141,14 +157,17 @@ class InterviewEngine {
             ];
             
         } catch (Exception $e) {
-            // Log fallback indicator
             error_log("OpenAI Engine bypassed or error occurred (" . $e->getMessage() . "). Activating local fallback...");
             
-            // 7. Local Fallback Question Generator
             $fallbackQuestion = self::generateLocalQuestion($interview['topic_key'], $nextQuestionNum, $interview['persona_key']);
             
-            // If fallback question returns empty, it means we chose to wrap up
             if (empty($fallbackQuestion)) {
+                DB::query(
+                    "UPDATE lg_interviews SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE interview_id = :id",
+                    ['id' => $interviewId]
+                );
+                self::generateSummary($interview);
+
                 return [
                     'success' => true,
                     'next_question' => '',
@@ -158,7 +177,6 @@ class InterviewEngine {
                 ];
             }
             
-            // Save local message to database
             DB::insert(
                 "INSERT INTO lg_interview_messages (interview_id, sequence, role, text, question_type) 
                  VALUES (:id, :seq, 'interviewer', :text, 'local_fallback')",
@@ -180,88 +198,63 @@ class InterviewEngine {
     }
 
     /**
-     * Build the structured message history array for the OpenAI API
+     * Build prompt history for OpenAI API call
      */
     private static function buildApiMessages(array $interview, array $dbMessages): array {
-        $apiMessages = [];
+        $personaPrompt = $interview['system_prompt'] ?? "You are a warm, empathetic listener.";
+        $topicName = $interview['topic_name'] ?? "Life Experience";
+        $targetLimit = self::getTargetLimit($interview['duration_type']);
         
-        // System Prompt
-        $systemText = $interview['system_prompt'] . "\n" .
-                      "You are interviewing a contributor on the topic: \"" . $interview['topic_name'] . "\".\n" .
-                      "The contributor's chosen length is: " . $interview['duration_type'] . ".\n" .
-                      "Remember your rules: Ask exactly ONE concise question. Utilize previous answers for relevant follow-up. Do not request identifying information.";
+        $systemText = $personaPrompt . "\n\n" .
+            "You are conducting a structured life story recording session on the topic: \"{$topicName}\".\n" .
+            "Your goal is to guide the contributor to share meaningful life lessons, turning points, and advice.\n" .
+            "Target number of questions: {$targetLimit}.\n" .
+            "Be empathetic, natural, and asking only ONE question at a time.\n" .
+            "Do not ask multiple questions in a single response.";
+
+        $apiMessages = [
+            ['role' => 'system', 'content' => $systemText]
+        ];
         
-        $apiMessages[] = ['role' => 'system', 'content' => $systemText];
-        
-        // Map database messages to OpenAI schema
         foreach ($dbMessages as $msg) {
             $role = ($msg['role'] === 'interviewer') ? 'assistant' : 'user';
-            $apiMessages[] = ['role' => $role, 'content' => $msg['text']];
+            $apiMessages[] = [
+                'role' => $role,
+                'content' => $msg['text']
+            ];
         }
         
         return $apiMessages;
     }
 
-    /**
-     * Define the JSON response schema for strict validation
-     */
     private static function getResponseSchema(): array {
         return [
             'type' => 'object',
             'properties' => [
-                'next_question' => [
-                    'type' => 'string',
-                    'description' => 'The next follow up question'
-                ],
-                'question_type' => [
-                    'type' => 'string',
-                    'description' => 'One word category of the question, e.g. turning_point, advice, reflection'
-                ],
-                'interview_complete' => [
-                    'type' => 'boolean',
-                    'description' => 'Set true if target questions are met or content has wrapped up'
-                ],
-                'completion_reason' => [
-                    'type' => ['string', 'null'],
-                    'description' => 'Reason for completing the interview, or null'
-                ],
+                'next_question' => ['type' => 'string'],
+                'question_type' => ['type' => 'string'],
+                'interview_complete' => ['type' => 'boolean'],
+                'completion_reason' => ['type' => ['string', 'null']],
                 'themes' => [
                     'type' => 'array',
-                    'items' => ['type' => 'string'],
-                    'description' => 'List of 2-3 high-level themes extracted from the conversation so far'
+                    'items' => ['type' => 'string']
                 ],
-                'safety_flag' => [
-                    'type' => 'boolean',
-                    'description' => 'True if input triggers suicide/crisis/sensitive rules'
-                ],
-                'safety_category' => [
-                    'type' => ['string', 'null'],
-                    'description' => 'Category of safety issue, or null'
-                ]
+                'safety_flag' => ['type' => 'boolean'],
+                'safety_category' => ['type' => ['string', 'null']]
             ],
             'required' => [
-                'next_question',
-                'question_type',
-                'interview_complete',
-                'completion_reason',
-                'themes',
-                'safety_flag',
-                'safety_category'
+                'next_question', 'question_type', 'interview_complete', 'completion_reason', 'themes', 'safety_flag', 'safety_category'
             ],
             'additionalProperties' => false
         ];
     }
 
-    /**
-     * Map extracted themes to lg_themes and map to this interview
-     */
     private static function saveThemes(int $interviewId, array $themesList): void {
         foreach ($themesList as $themeName) {
             $themeName = trim(ucwords(strtolower($themeName)));
             if (empty($themeName)) continue;
             
             try {
-                // 1. Get or insert theme
                 $theme = DB::fetch("SELECT theme_id FROM lg_themes WHERE theme_name = :name", ['name' => $themeName]);
                 if ($theme) {
                     $themeId = $theme['theme_id'];
@@ -269,7 +262,6 @@ class InterviewEngine {
                     $themeId = DB::insert("INSERT INTO lg_themes (theme_name) VALUES (:name)", ['name' => $themeName]);
                 }
                 
-                // 2. Map theme to interview
                 DB::query(
                     "INSERT INTO lg_interview_themes (interview_id, theme_id, confidence, user_confirmation) 
                      VALUES (:interview_id, :theme_id, 0.85, 0)
@@ -277,17 +269,12 @@ class InterviewEngine {
                     ['interview_id' => $interviewId, 'theme_id' => $themeId]
                 );
             } catch (Exception $e) {
-                // Log and ignore to prevent blocking
                 error_log("Failed mapping theme '$themeName': " . $e->getMessage());
             }
         }
     }
 
-    /**
-     * Generate logical fallback questions when OpenAI API is disabled or fails
-     */
     private static function generateLocalQuestion(string $topicKey, int $questionNum, string $personaKey): string {
-        // Predefined question sequences for each topic
         $banks = [
             'lesson' => [
                 2 => "What were the immediate events that led up to you learning this lesson?",
@@ -297,37 +284,9 @@ class InterviewEngine {
                 6 => "If you could tell someone younger one thing to prevent them from making the same mistake, what would it be?",
                 7 => "Is there a specific moment in this experience that you can look back on and laugh about now?",
                 8 => "Thank you for sharing this. Is there any final thought you want to add before we finish?"
-            ],
-            'differently' => [
-                2 => "What options did you have at the time, and what made you choose the path you did?",
-                3 => "How did that decision end up affecting your career, family, or personal path?",
-                4 => "If you had gone down the other path, what do you think would have been different?",
-                5 => "How long did it take you to reconcile with the path you actually took?",
-                6 => "What is the single most important lesson that taking that path taught you about yourself?",
-                7 => "What advice would you give to someone who is at a similar crossroad today?",
-                8 => "Thank you. Is there any concluding thought you'd like to share?"
-            ],
-            'advice' => [
-                2 => "What are the common mistakes you see younger people making in this area today?",
-                3 => "How did you learn this? Was there a specific mentor or personal mistake that taught you?",
-                4 => "How has society's view on this topic changed since you were in your twenties?",
-                5 => "What is a practical first step a young person could take to apply your advice?",
-                6 => "Is there a common piece of advice that young people get today that you actually disagree with?",
-                7 => "If you could go back and tell your 20-year-old self this advice, how do you think they would react?",
-                8 => "Thank you. Is there any final wisdom you'd like to record?"
-            ],
-            'funny' => [
-                2 => "How did the situation start? Was it a misunderstanding or just bad luck?",
-                3 => "What was going through your mind when you realized things were going wrong?",
-                4 => "How did the people around you react to the mishap at the time?",
-                5 => "How long did it take for this experience to go from embarrassing to hilarious?",
-                6 => "What does this funny memory teach you about taking life too seriously?",
-                7 => "Do you still share this story at family dinners or gatherings?",
-                8 => "That's a wonderful memory. Any final detail you'd like to include before we wrap up?"
             ]
         ];
         
-        // General default bank for other topics (career, relationships, money, health, turning_point, pride, etc.)
         $defaultBank = [
             2 => "Can you describe the turning point or details of this experience in more depth?",
             3 => "Who else was involved, and how did they affect the outcome?",
@@ -339,10 +298,8 @@ class InterviewEngine {
         ];
         
         $bank = $banks[$topicKey] ?? $defaultBank;
-        
         $question = $bank[$questionNum] ?? '';
         
-        // Modify the tone slightly based on the persona
         if (!empty($question)) {
             switch ($personaKey) {
                 case 'grandchild':
@@ -377,9 +334,13 @@ class InterviewEngine {
         
         $answers = array_column($dbAnswers, 'text');
         
+        // Filter out skipped placeholder notes for clean summaries
+        $validAnswers = array_values(array_filter($answers, function($a) {
+            return !empty($a) && stripos($a, 'skip') === false;
+        }));
+
         // Attempt OpenAI summary extraction
         try {
-            // Fetch all messages
             $dbMessages = DB::fetchAll(
                 "SELECT role, text FROM lg_interview_messages WHERE interview_id = :id ORDER BY sequence ASC",
                 ['id' => $interviewId]
@@ -421,23 +382,23 @@ class InterviewEngine {
             $summaryData = OpenAIClient::chatCompletion($apiMessages, $schema);
             
         } catch (Exception $e) {
-            error_log("OpenAI summary failed or bypassed: " . $e->getMessage() . ". Generating dynamic local fallback summary...");
+            error_log("OpenAI summary bypassed or failed (" . $e->getMessage() . "). Generating dynamic local summary...");
             
-            // Dynamic local fallback using user's actual answers
-            $firstAnswer = $answers[0] ?? 'Sharing life experiences';
-            $secondAnswer = $answers[1] ?? 'Making key decisions';
-            $thirdAnswer = $answers[2] ?? 'Reaping the outcomes';
-            $fourthAnswer = $answers[3] ?? 'Sharing lessons learned';
-            $fifthAnswer = $answers[4] ?? 'Giving advice';
+            $topicName = $interview['topic_name'] ?? 'Life Reflections';
+            $firstAnswer = $validAnswers[0] ?? 'Sharing life experiences and reflections';
+            $secondAnswer = $validAnswers[1] ?? 'Making key choices during life turning points';
+            $thirdAnswer = $validAnswers[2] ?? 'Growth and learning from experience';
+            $fourthAnswer = $validAnswers[3] ?? 'Staying resilient and valuing family and relationships';
+            $fifthAnswer = $validAnswers[4] ?? 'Always trust your resilience and cherish your loved ones.';
             
             $summaryData = [
-                'story_summary' => "A personal reflection on " . strtolower($interview['topic_name']) . ". The contributor shared key details: " . substr($firstAnswer, 0, 100) . "...",
-                'main_lesson' => !empty($fourthAnswer) ? $fourthAnswer : "The core lesson was that decisions are shaping points, and staying resilient matters.",
-                'turning_point' => !empty($secondAnswer) ? $secondAnswer : "The turning point was making a key choice regarding " . strtolower($interview['topic_name']) . ".",
-                'outcome' => !empty($thirdAnswer) ? $thirdAnswer : "The decision led to growth, learning, and new perspectives.",
-                'advice' => !empty($fifthAnswer) ? $fifthAnswer : "Advice to younger people: take risks, value relationships, and don't worry about tiny details.",
+                'story_summary' => "A personal reflection on " . strtolower($topicName) . ". Key insight: " . $firstAnswer,
+                'main_lesson' => $fourthAnswer,
+                'turning_point' => $secondAnswer,
+                'outcome' => $thirdAnswer,
+                'advice' => $fifthAnswer,
                 'funny_moment' => "A lighter moment occurred when reflecting on life's unexpected turns.",
-                'representative_quote' => !empty($firstAnswer) ? '"' . substr($firstAnswer, 0, 150) . '"' : '"Your life has answers someone else needs."'
+                'representative_quote' => '"' . $firstAnswer . '"'
             ];
         }
         
@@ -460,6 +421,12 @@ class InterviewEngine {
                 array_merge($summaryData, ['id' => $interviewId])
             );
         }
+
+        // Also update interview status to completed
+        DB::query(
+            "UPDATE lg_interviews SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE interview_id = :id",
+            ['id' => $interviewId]
+        );
         
         return $summaryData;
     }

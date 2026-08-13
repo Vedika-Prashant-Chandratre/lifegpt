@@ -6,41 +6,47 @@ require_once __DIR__ . '/config.php';
 ?>
     </main>
 
+    <?php if (empty($hideFooter)): ?>
     <footer>
         <div class="footer-container">
             <div class="footer-section" style="max-width: 400px;">
-                <h4>LifeGPT</h4>
-                <p style="color: #94a3b8; font-size: 1.05rem; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <span class="logo-icon-badge" style="width: 28px; height: 28px; font-size: 0.9rem;">🌱</span>
+                    <strong style="font-family: var(--font-heading); font-size: 1.4rem; color: var(--color-primary);">LifeGPT</strong>
+                </div>
+                <p style="color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 0.75rem;">
                     “Your life has answers someone else needs.”
                 </p>
-                <p style="color: #64748b; font-size: 0.95rem;">
+                <p style="color: var(--color-text-muted); font-size: 0.85rem;">
                     Powered by people. Organized by AI.<br>
                     A FiftyIsNifty research and experimentation initiative.
                 </p>
             </div>
             
             <div class="footer-section">
-                <h4>Participate</h4>
-                <ul class="footer-links">
-                    <li><a href="<?php echo APP_URL; ?>/interview/choose-persona.php">Share Your Story</a></li>
-                    <li><a href="<?php echo APP_URL; ?>/ask/">Ask LifeGPT</a></li>
-                    <li><a href="<?php echo APP_URL; ?>/how-it-works.php">How It Works</a></li>
+                <h4 style="font-family: var(--font-heading); color: var(--color-primary); font-size: 1.1rem; margin-bottom: 0.75rem;">Navigation</h4>
+                <ul class="footer-links" style="list-style: none;">
+                    <li style="margin-bottom: 0.4rem;"><a href="<?php echo APP_URL; ?>/interview/start.php">Share Your Story</a></li>
+                    <li style="margin-bottom: 0.4rem;"><a href="<?php echo APP_URL; ?>/ask/">Ask LifeGPT</a></li>
+                    <li style="margin-bottom: 0.4rem;"><a href="javascript:void(0)" onclick="openHowItWorksModal()">How LifeGPT Works</a></li>
                 </ul>
             </div>
             
             <div class="footer-section">
-                <h4>Legal & Info</h4>
-                <ul class="footer-links">
-                    <li><a href="<?php echo APP_URL; ?>/privacy.php">Privacy Policy</a></li>
-                    <li><a href="<?php echo APP_URL; ?>/terms.php">Terms of Service</a></li>
+                <h4 style="font-family: var(--font-heading); color: var(--color-primary); font-size: 1.1rem; margin-bottom: 0.75rem;">Legal & Portals</h4>
+                <ul class="footer-links" style="list-style: none;">
+                    <li style="margin-bottom: 0.4rem;"><a href="<?php echo APP_URL; ?>/privacy.php">Privacy Policy</a></li>
+                    <li style="margin-bottom: 0.4rem;"><a href="<?php echo APP_URL; ?>/terms.php">Terms of Service</a></li>
+                    <li style="margin-bottom: 0.4rem;"><a href="<?php echo APP_URL; ?>/admin/login.php" style="color: var(--color-text-muted);">Admin System Login</a></li>
                 </ul>
             </div>
         </div>
         
         <div class="footer-bottom">
-            <p>&copy; <?php echo date('Y'); ?> FiftyIsNifty. All rights reserved.</p>
-            <p style="font-size: 0.85rem; color: #64748b;">LifeGPT is an experimental research project. Content is for informational purposes only.</p>
+            <p>&copy; <?php echo date('Y'); ?> LifeGPT — Collective Wisdom Archive. All rights reserved.</p>
+            <p style="font-size: 0.85rem; color: var(--color-text-muted);">LifeGPT is an experimental research platform. Respecting comfort & privacy.</p>
         </div>
     </footer>
+    <?php endif; ?>
 </body>
 </html>
