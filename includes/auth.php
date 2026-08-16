@@ -25,7 +25,7 @@ class Auth {
         // Return user data from session or refresh from database
         if (!isset($_SESSION['user_data'])) {
             $user = DB::fetch(
-                "SELECT user_id, uuid, email, display_name, role, status FROM lg_users WHERE user_id = :id",
+                "SELECT user_id, uuid, email, username, display_name, age, country, profession, gender, about_me, role, status FROM lg_users WHERE user_id = :id",
                 ['id' => $_SESSION['user_id']]
             );
             if ($user) {
@@ -93,7 +93,7 @@ class Auth {
             );
 
             // Fetch created user ID
-            $user = DB::fetch("SELECT user_id, uuid, email, display_name, role, status FROM lg_users WHERE email = :email", ['email' => $email]);
+            $user = DB::fetch("SELECT user_id, uuid, email, username, display_name, age, country, profession, gender, about_me, role, status FROM lg_users WHERE email = :email", ['email' => $email]);
             
             return ['success' => true, 'user' => $user];
         } catch (Exception $e) {
@@ -130,7 +130,13 @@ class Auth {
                 'user_id' => $user['user_id'],
                 'uuid' => $user['uuid'],
                 'email' => $user['email'],
+                'username' => $user['username'] ?? null,
                 'display_name' => $user['display_name'],
+                'age' => $user['age'] ?? null,
+                'country' => $user['country'] ?? null,
+                'profession' => $user['profession'] ?? null,
+                'gender' => $user['gender'] ?? null,
+                'about_me' => $user['about_me'] ?? null,
                 'role' => $user['role'],
                 'status' => $user['status']
             ];

@@ -28,9 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
          JOIN lg_interviews i ON kc.interview_id = i.interview_id
          LEFT JOIN lg_consents c ON i.interview_id = c.interview_id
          WHERE (kc.approved_for_rag = 1 OR kc.status = 'approved') 
-         AND (kc.anonymized_text LIKE :query OR kc.text LIKE :query)
+         AND (kc.anonymized_text LIKE :query_anon OR kc.text LIKE :query_orig)
          LIMIT 5",
-        ['query' => '%' . $userQuery . '%']
+        [
+            'query_anon' => '%' . $userQuery . '%',
+            'query_orig' => '%' . $userQuery . '%',
+        ]
     );
 
     if (empty($chunks)) {

@@ -15,7 +15,13 @@ CREATE TABLE lg_users (
     uuid CHAR(36) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    username VARCHAR(50) NULL,
     display_name VARCHAR(100) NOT NULL,
+    age INT NULL,
+    country VARCHAR(100) NULL,
+    profession VARCHAR(100) NULL,
+    gender VARCHAR(30) NULL,
+    about_me TEXT NULL,
     role ENUM('member', 'admin') DEFAULT 'member',
     status ENUM('pending', 'active', 'suspended') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -23,6 +29,7 @@ CREATE TABLE lg_users (
     INDEX idx_user_uuid (uuid),
     INDEX idx_user_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- 2. lg_password_resets
 DROP TABLE IF EXISTS lg_password_resets;

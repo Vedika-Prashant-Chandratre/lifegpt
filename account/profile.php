@@ -16,14 +16,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $displayName = trim($_POST['display_name'] ?? '');
     $email = trim(strtolower($_POST['email'] ?? ''));
+    $username = trim($_POST['username'] ?? '');
+    $age = !empty($_POST['age']) ? (int)$_POST['age'] : null;
+    $country = trim($_POST['country'] ?? '');
+    $gender = trim($_POST['gender'] ?? '');
+    $profession = trim($_POST['profession'] ?? '');
+    $aboutMe = trim($_POST['about_me'] ?? '');
     
     if (empty($displayName) || empty($email)) {
         $error = 'Display name and email are required.';
     } else {
         try {
             DB::query(
-                "UPDATE lg_users SET display_name = :display_name, email = :email WHERE user_id = :id",
-                ['display_name' => $displayName, 'email' => $email, 'id' => $user['user_id']]
+                "UPDATE lg_users SET 
+                    display_name = :display_name, 
+                    email = :email,
+                    username = :username,
+                    age = :age,
+                    country = :country,
+                    gender = :gender,
+                    profession = :profession,
+                    about_me = :about_me
+                 WHERE user_id = :id",
+                [
+                    'display_name' => $displayName,
+                    'email' => $email,
+                    'username' => empty($username) ? null : $username,
+                    'age' => $age,
+                    'country' => empty($country) ? null : $country,
+                    'gender' => empty($gender) ? null : $gender,
+                    'profession' => empty($profession) ? null : $profession,
+                    'about_me' => empty($aboutMe) ? null : $aboutMe,
+                    'id' => $user['user_id']
+                ]
             );
             unset($_SESSION['user_data']);
             header("Location: " . APP_URL . "/account/choice.php");
@@ -64,7 +89,7 @@ require_once __DIR__ . '/../includes/header.php';
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
                 <div class="form-group">
                     <label for="username" class="form-label">Username</label>
-                    <input type="text" id="username" name="username" class="form-control" placeholder="e.g. helen_smith">
+                    <input type="text" id="username" name="username" class="form-control" placeholder="e.g. helen_smith" value="<?php echo htmlspecialchars($user['username'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
                     <label for="display_name" class="form-label">Display Name *</label>
@@ -75,31 +100,31 @@ require_once __DIR__ . '/../includes/header.php';
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
                 <div class="form-group">
                     <label for="age" class="form-label">Age</label>
-                    <input type="number" id="age" name="age" class="form-control" placeholder="e.g. 64" min="18" max="120">
+                    <input type="number" id="age" name="age" class="form-control" placeholder="e.g. 64" min="18" max="120" value="<?php echo htmlspecialchars($user['age'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
                     <label for="country" class="form-label">Country</label>
-                    <input type="text" id="country" name="country" class="form-control" placeholder="e.g. United States">
+                    <input type="text" id="country" name="country" class="form-control" placeholder="e.g. United States" value="<?php echo htmlspecialchars($user['country'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
                     <label for="gender" class="form-label">Gender</label>
                     <select id="gender" name="gender" class="form-control">
-                        <option value="">Prefer not to say</option>
-                        <option value="female">Female</option>
-                        <option value="male">Male</option>
-                        <option value="non_binary">Non-binary</option>
+                        <option value="" <?php echo empty($user['gender']) ? 'selected' : ''; ?>>Prefer not to say</option>
+                        <option value="female" <?php echo ($user['gender'] ?? '') === 'female' ? 'selected' : ''; ?>>Female</option>
+                        <option value="male" <?php echo ($user['gender'] ?? '') === 'male' ? 'selected' : ''; ?>>Male</option>
+                        <option value="non_binary" <?php echo ($user['gender'] ?? '') === 'non_binary' ? 'selected' : ''; ?>>Non-binary</option>
                     </select>
                 </div>
             </div>
 
             <div class="form-group">
                 <label for="profession" class="form-label">Profession / Background</label>
-                <input type="text" id="profession" name="profession" class="form-control" placeholder="e.g. Retired Elementary School Teacher">
+                <input type="text" id="profession" name="profession" class="form-control" placeholder="e.g. Retired Elementary School Teacher" value="<?php echo htmlspecialchars($user['profession'] ?? ''); ?>">
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
                 <label for="about_me" class="form-label">About Me Bio</label>
-                <textarea id="about_me" name="about_me" class="form-control" placeholder="Share a few words about your life journey, hobbies, or perspective..."></textarea>
+                <textarea id="about_me" name="about_me" class="form-control" placeholder="Share a few words about your life journey, hobbies, or perspective..."><?php echo htmlspecialchars($user['about_me'] ?? ''); ?></textarea>
             </div>
         </div>
 
