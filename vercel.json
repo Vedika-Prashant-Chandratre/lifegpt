@@ -1,13 +1,18 @@
-{
+﻿{
   "functions": {
-    "api/**/*.php": { "runtime": "vercel-php@0.7.3" },
-    "account/**/*.php": { "runtime": "vercel-php@0.7.3" },
+    "api/**/*.php":       { "runtime": "vercel-php@0.7.3" },
+    "account/**/*.php":   { "runtime": "vercel-php@0.7.3" },
     "interview/**/*.php": { "runtime": "vercel-php@0.7.3" },
-    "*.php": { "runtime": "vercel-php@0.7.3" }
+    "ask/**/*.php":       { "runtime": "vercel-php@0.7.3" },
+    "dashboard/**/*.php": { "runtime": "vercel-php@0.7.3" },
+    "admin/**/*.php":     { "runtime": "vercel-php@0.7.3" },
+    "*.php":              { "runtime": "vercel-php@0.7.3" }
   },
   "routes": [
     { "src": "/assets/(.*)", "dest": "/assets/$1" },
     { "handle": "filesystem" },
+    { "src": "^/([a-zA-Z0-9_-]+)$",  "dest": "/$1/index.php" },
+    { "src": "^/([a-zA-Z0-9_-]+)/$", "dest": "/$1/index.php" },
     { "src": "/(.*)", "dest": "/$1" }
   ]
 }
