@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
 
     try {
         if (!empty($contextText)) {
-            $systemPrompt = "You are Ask LifeGPT, an AI assistant trained on a growing collection of real human life experiences, advice, and wisdom. Answer the user's question empathetically using the provided context chunks. Summarize key lessons clearly.";
+            $systemPrompt = "You are Ask LifeGPT, an AI assistant trained on a growing collection of real human life experiences, advice, and wisdom. Answer the user's question in a warm, natural, human conversation style based on the provided context chunks. Avoid using markdown formatting (like asterisks, hashtags, or bullet characters) in the response text; format it as clean, readable paragraphs suitable for a chat bubble. You MUST return a JSON object containing an \"answer\" key with your response text.";
             $messages = [
                 ['role' => 'system', 'content' => $systemPrompt],
                 ['role' => 'user', 'content' => "Context Wisdom:\n" . $contextText . "\n\nUser Question: " . $userQuery]

@@ -13,32 +13,48 @@ class OpenAIClient {
      * Returns the structured response or throws an exception
      */
     public static function chatCompletion(array $messages, array $responseSchema = null): array {
-        $apiKey = config('OPENAI_API_KEY');
+        $apiKey = config('GROQ_API_KEY') ?: config('OPENAI_API_KEY');
         
         // Check if API key is valid or placeholder
         if (empty($apiKey) || $apiKey === 'your_openai_api_key_here' || strpos($apiKey, 'your_') === 0) {
-            throw new Exception("OpenAI API key not configured. Mock Mode active.");
+            throw new Exception("API key not configured. Mock Mode active.");
         }
 
-        $url = 'https://api.openai.com/v1/chat/completions';
+        // Auto-detect provider based on key prefix
+        $isGroq = (strpos($apiKey, 'gsk_') === 0);
+        
+       if ($isGroq) {
+    $url = 'https://api.groq.com/openai/v1/chat/completions';
+    $model = 'openai/gpt-oss-20b';
+} else {
+    $url = 'https://api.openai.com/v1/chat/completions';
+    $model = 'gpt-4o-mini';
+}
+
         
         // Prepare payload
         $payload = [
-            'model' => 'gpt-4o-mini', // Cost-effective fast model
+            'model' => $model,
             'messages' => $messages,
             'temperature' => 0.7
         ];
 
-        // If structured output is requested, enforce JSON schema
+        // If structured output is requested, enforce JSON schema (or JSON mode for Groq)
         if ($responseSchema) {
-            $payload['response_format'] = [
-                'type' => 'json_schema',
-                'json_schema' => [
-                    'name' => 'interview_response',
-                    'strict' => true,
-                    'schema' => $responseSchema
-                ]
-            ];
+            if ($isGroq) {
+                $payload['response_format'] = ['type' => 'json_object'];
+                $messages[count($messages) - 1]['content'] .= "\n\nYou MUST respond with a JSON object matching this schema: " . json_encode($responseSchema);
+                $payload['messages'] = $messages;
+            } else {
+                $payload['response_format'] = [
+                    'type' => 'json_schema',
+                    'json_schema' => [
+                        'name' => 'interview_response',
+                        'strict' => true,
+                        'schema' => $responseSchema
+                    ]
+                ];
+            }
         } else {
             $payload['response_format'] = ['type' => 'json_object'];
         }
@@ -70,20 +86,20 @@ class OpenAIClient {
         $latencyMs = round(($endTime - $startTime) * 1000);
 
         if ($err) {
-            self::logUsage('error', 'gpt-4o-mini', 0, $latencyMs, 'failed', 0.0);
+            self::logUsage('error', $model, 0, $latencyMs, 'failed', 0.0);
             throw new Exception("cURL Error: " . $err);
         }
 
         if ($httpCode !== 200) {
-            self::logUsage('error', 'gpt-4o-mini', 0, $latencyMs, 'failed_code_' . $httpCode, 0.0);
-            error_log("OpenAI API returned error code $httpCode. Response: " . $response);
-            throw new Exception("OpenAI API Error: Received HTTP status code " . $httpCode);
+            self::logUsage('error', $model, 0, $latencyMs, 'failed_code_' . $httpCode, 0.0);
+            error_log("API returned error code $httpCode. Response: " . $response);
+            throw new Exception("API Error: Received HTTP status code " . $httpCode);
         }
 
         $data = json_decode($response, true);
         if (!$data || !isset($data['choices'][0]['message']['content'])) {
-            self::logUsage('error', 'gpt-4o-mini', 0, $latencyMs, 'malformed', 0.0);
-            throw new Exception("OpenAI API returned malformed JSON response.");
+            self::logUsage('error', $model, 0, $latencyMs, 'malformed', 0.0);
+            throw new Exception("API returned malformed JSON response.");
         }
 
         $content = $data['choices'][0]['message']['content'];
@@ -91,10 +107,14 @@ class OpenAIClient {
         $completionTokens = $data['usage']['completion_tokens'] ?? 0;
         $totalTokens = $promptTokens + $completionTokens;
         
-        // Estimate cost: gpt-4o-mini rates: $0.150 / 1M input, $0.600 / 1M output tokens
-        $costEstimate = (($promptTokens * 0.15) + ($completionTokens * 0.60)) / 1000000;
+        // Estimate cost
+        if ($isGroq) {
+            $costEstimate = (($promptTokens * 0.05) + ($completionTokens * 0.08)) / 1000000;
+        } else {
+            $costEstimate = (($promptTokens * 0.15) + ($completionTokens * 0.60)) / 1000000;
+        }
 
-        self::logUsage('chat_completion', 'gpt-4o-mini', $totalTokens, $latencyMs, 'success', $costEstimate);
+        self::logUsage('chat_completion', $model, $totalTokens, $latencyMs, 'success', $costEstimate);
 
         return json_decode($content, true) ?: [];
     }

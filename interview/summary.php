@@ -63,6 +63,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
+// Finalize Story Action
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'finalize_story') {
+    CSRF::validateRequest();
+    
+    try {
+        require_once __DIR__ . '/../includes/interview-engine.php';
+        
+        // Finalize using existing database values
+        InterviewEngine::finalizeStory($interviewId);
+        
+        // Clean session variables
+        unset($_SESSION['active_interview_id']);
+        unset($_SESSION['active_interview_uuid']);
+        
+        if ($isLoggedIn) {
+            header("Location: " . APP_URL . "/dashboard/?completed=1&uuid=" . $uuid);
+        } else {
+            header("Location: " . APP_URL . "/?submitted=1");
+        }
+        exit;
+    } catch (Exception $e) {
+        error_log("Failed to finalize story: " . $e->getMessage());
+        $error = 'A database error occurred while saving your story.';
+    }
+}
+
+
 $pageTitle = "Completed Story Review";
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -207,17 +234,21 @@ require_once __DIR__ . '/../includes/header.php';
             <button type="submit" class="btn btn-danger">🗑️ Delete Story & Exit</button>
         </form>
 
-        <?php if ($isLoggedIn): ?>
-            <!-- Logged In Member Button: Save Story & Go to Dashboard -->
-            <a href="<?php echo APP_URL; ?>/dashboard/?completed=1&uuid=<?php echo htmlspecialchars($uuid); ?>" class="btn btn-primary text-lg" style="padding: 0.85rem 2.5rem;">
-                💾 Save Story & Go to Dashboard ➔
-            </a>
-        <?php else: ?>
-            <!-- Anonymous Guest Button -->
-            <a href="<?php echo APP_URL; ?>/?submitted=1" class="btn btn-primary text-lg" style="padding: 0.85rem 2.5rem;">
-                🚀 Submit Anonymously to Library
-            </a>
-        <?php endif; ?>
+        <form action="" method="POST">
+            <?php echo CSRF::getInput(); ?>
+            <input type="hidden" name="action" value="finalize_story">
+            <?php if ($isLoggedIn): ?>
+                <!-- Logged In Member Button: Save Story & Go to Dashboard -->
+                <button type="submit" class="btn btn-primary text-lg" style="padding: 0.85rem 2.5rem; cursor: pointer; border: none;">
+                    💾 Save Story & Go to Dashboard ➔
+                </button>
+            <?php else: ?>
+                <!-- Anonymous Guest Button -->
+                <button type="submit" class="btn btn-primary text-lg" style="padding: 0.85rem 2.5rem; cursor: pointer; border: none;">
+                    🚀 Submit Anonymously to Library
+                </button>
+            <?php endif; ?>
+        </form>
     </div>
 
 </div>

@@ -125,74 +125,22 @@ try {
         try {
             DB::beginTransaction();
 
-            // A. Update Summary Table
-            DB::query(
-                "UPDATE lg_interview_summaries 
-                 SET story_summary = :story_summary, main_lesson = :main_lesson, turning_point = :turning_point,
-                     outcome = :outcome, advice = :advice, funny_moment = :funny_moment, representative_quote = :representative_quote,
-                     approved_summary = 1, approved_quote = 1, updated_at = CURRENT_TIMESTAMP
-                 WHERE interview_id = :id",
-                [
-                    'story_summary' => $storySummary,
-                    'main_lesson' => $mainLesson,
-                    'turning_point' => $turningPoint,
-                    'outcome' => $outcome,
-                    'advice' => $advice,
-                    'funny_moment' => !empty($funnyMoment) ? $funnyMoment : null,
-                    'representative_quote' => $representativeQuote,
-                    'id' => $interviewId
-                ]
-            );
-
-            // B. Update Consents Table
-            DB::query(
-                "UPDATE lg_consents 
-                 SET rag_consent = :rag, quotes_consent = :quotes, research_consent = :research, publication_consent = :publication,
-                     attribution_type = :attribution_type, attribution_value = :attribution_value, withdrawn = 0, updated_at = CURRENT_TIMESTAMP
-                 WHERE interview_id = :id",
-                [
-                    'rag' => $rag,
-                    'quotes' => $quotes,
-                    'research' => $research,
-                    'publication' => $publication,
-                    'attribution_type' => $attributionType,
-                    'attribution_value' => !empty($attributionValue) ? $attributionValue : null,
-                    'id' => $interviewId
-                ]
-            );
-
-            // C. Populate lg_knowledge_chunks as PENDING (Admin review required)
-            // Clean out old pending chunks if they resubmit edits
-            DB::query("DELETE FROM lg_knowledge_chunks WHERE interview_id = :id AND status = 'pending'", ['id' => $interviewId]);
-            
-            $chunks = [
-                ['content_type' => 'summary', 'text' => $storySummary],
-                ['content_type' => 'lesson', 'text' => $mainLesson],
-                ['content_type' => 'turning_point', 'text' => $turningPoint],
-                ['content_type' => 'outcome', 'text' => $outcome],
-                ['content_type' => 'advice', 'text' => $advice],
-                ['content_type' => 'quote', 'text' => $representativeQuote]
-            ];
-            
-            if (!empty($funnyMoment)) {
-                $chunks[] = ['content_type' => 'funny_moment', 'text' => $funnyMoment];
-            }
-            
-            foreach ($chunks as $c) {
-                if (empty($c['text'])) continue;
-                
-                // Set default anonymized text (same as text initially, admin can redact)
-                DB::insert(
-                    "INSERT INTO lg_knowledge_chunks (interview_id, content_type, text, anonymized_text, approved_for_rag, approved_for_publication, status) 
-                     VALUES (:interview_id, :type, :text, :anon, 0, 0, 'pending')",
-                    [
-                        'interview_id' => $interviewId,
-                        'type' => $c['content_type'],
-                        'text' => $c['text'],
-                        'anon' => $c['text']
-                    ]
-                );
-            }
+            require_once __DIR__ . '/../includes/interview-engine.php';
+            InterviewEngine::finalizeStory($interviewId, [
+                'story_summary' => $storySummary,
+                'main_lesson' => $mainLesson,
+                'turning_point' => $turningPoint,
+                'outcome' => $outcome,
+                'advice' => $advice,
+                'funny_moment' => $funnyMoment,
+                'representative_quote' => $representativeQuote,
+                'rag_consent' => $rag,
+                'quotes_consent' => $quotes,
+                'research_consent' => $research,
+                'publication_consent' => $publication,
+                'attribution_type' => $attributionType,
+                'attribution_value' => $attributionValue
+            ]);
 
             DB::commit();
 

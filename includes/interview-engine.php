@@ -210,7 +210,7 @@ class InterviewEngine {
             "Your goal is to guide the contributor to share meaningful life lessons, turning points, and advice.\n" .
             "Target number of questions: {$targetLimit}.\n" .
             "Be empathetic, natural, and asking only ONE question at a time.\n" .
-            "Do not ask multiple questions in a single response.";
+            "Do not ask multiple questions in a single response. Avoid using any markdown formatting (like asterisks or hashtags) in your questions.";
 
         $apiMessages = [
             ['role' => 'system', 'content' => $systemText]
@@ -355,7 +355,7 @@ class InterviewEngine {
                           "5. advice: Direct advice the contributor offers to younger generations.\n" .
                           "6. funny_moment: A funny or lighthearted detail, or null if not applicable.\n" .
                           "7. representative_quote: A powerful, first-person quote summarizing their wisdom.\n" .
-                          "Ensure all outputs are clear, respectful, and capture the authentic voice of the contributor.";
+                          "Ensure all outputs are clear, respectful, and capture the authentic voice of the contributor. Do not use markdown syntax (like asterisks or hashtags) inside the extracted text.";
             
             $apiMessages[] = ['role' => 'system', 'content' => $systemText];
             
@@ -430,4 +430,119 @@ class InterviewEngine {
         
         return $summaryData;
     }
+
+    /**
+     * Finalize the story by generating/updating the summary,
+     * populating knowledge chunks, updating consents, and marking the interview as completed.
+     */
+    public static function finalizeStory(int $interviewId, array $customData = []): array {
+        // 1. Fetch the interview
+        $interview = DB::fetch("SELECT * FROM lg_interviews WHERE interview_id = :id", ['id' => $interviewId]);
+        if (!$interview) {
+            throw new Exception("Interview not found.");
+        }
+
+        // 2. Ensure summary exists or is generated
+        $summary = DB::fetch("SELECT * FROM lg_interview_summaries WHERE interview_id = :id", ['id' => $interviewId]);
+        if (!$summary) {
+            $summary = self::generateSummary($interview);
+        }
+
+        // 3. Merge custom data if provided, prioritizing the custom inputs
+        $storySummary = isset($customData['story_summary']) && $customData['story_summary'] !== '' ? $customData['story_summary'] : $summary['story_summary'];
+        $mainLesson = isset($customData['main_lesson']) && $customData['main_lesson'] !== '' ? $customData['main_lesson'] : $summary['main_lesson'];
+        $turningPoint = isset($customData['turning_point']) && $customData['turning_point'] !== '' ? $customData['turning_point'] : $summary['turning_point'];
+        $outcome = isset($customData['outcome']) && $customData['outcome'] !== '' ? $customData['outcome'] : $summary['outcome'];
+        $advice = isset($customData['advice']) && $customData['advice'] !== '' ? $customData['advice'] : $summary['advice'];
+        $funnyMoment = isset($customData['funny_moment']) ? $customData['funny_moment'] : $summary['funny_moment'];
+        $representativeQuote = isset($customData['representative_quote']) && $customData['representative_quote'] !== '' ? $customData['representative_quote'] : $summary['representative_quote'];
+
+        // 4. Update summary table
+        DB::query(
+            "UPDATE lg_interview_summaries 
+             SET story_summary = :story_summary, main_lesson = :main_lesson, turning_point = :turning_point,
+                 outcome = :outcome, advice = :advice, funny_moment = :funny_moment, representative_quote = :representative_quote,
+                 approved_summary = 1, approved_quote = 1, updated_at = CURRENT_TIMESTAMP
+             WHERE interview_id = :id",
+            [
+                'story_summary' => $storySummary,
+                'main_lesson' => $mainLesson,
+                'turning_point' => $turningPoint,
+                'outcome' => $outcome,
+                'advice' => $advice,
+                'funny_moment' => !empty($funnyMoment) ? $funnyMoment : null,
+                'representative_quote' => $representativeQuote,
+                'id' => $interviewId
+            ]
+        );
+
+        // 5. Update consents if provided
+        $consent = DB::fetch("SELECT * FROM lg_consents WHERE interview_id = :id", ['id' => $interviewId]);
+        if ($consent) {
+            DB::query(
+                "UPDATE lg_consents 
+                 SET rag_consent = :rag, quotes_consent = :quotes, research_consent = :research, publication_consent = :publication,
+                     attribution_type = :attribution_type, attribution_value = :attribution_value, withdrawn = 0, updated_at = CURRENT_TIMESTAMP
+                 WHERE interview_id = :id",
+                [
+                    'rag' => $customData['rag_consent'] ?? $consent['rag_consent'],
+                    'quotes' => $customData['quotes_consent'] ?? $consent['quotes_consent'],
+                    'research' => $customData['research_consent'] ?? $consent['research_consent'],
+                    'publication' => $customData['publication_consent'] ?? $consent['publication_consent'],
+                    'attribution_type' => $customData['attribution_type'] ?? $consent['attribution_type'],
+                    'attribution_value' => !empty($customData['attribution_value']) ? $customData['attribution_value'] : $consent['attribution_value'],
+                    'id' => $interviewId
+                ]
+            );
+        }
+
+        // 6. Populate lg_knowledge_chunks as PENDING (Admin review required)
+        // Clean out old pending chunks first to prevent duplicates on resubmissions
+        DB::query("DELETE FROM lg_knowledge_chunks WHERE interview_id = :id AND status = 'pending'", ['id' => $interviewId]);
+        
+        $chunks = [
+            ['content_type' => 'summary', 'text' => $storySummary],
+            ['content_type' => 'lesson', 'text' => $mainLesson],
+            ['content_type' => 'turning_point', 'text' => $turningPoint],
+            ['content_type' => 'outcome', 'text' => $outcome],
+            ['content_type' => 'advice', 'text' => $advice],
+            ['content_type' => 'quote', 'text' => $representativeQuote]
+        ];
+        
+        if (!empty($funnyMoment)) {
+            $chunks[] = ['content_type' => 'funny_moment', 'text' => $funnyMoment];
+        }
+        
+        foreach ($chunks as $c) {
+            if (empty($c['text'])) continue;
+            
+            DB::insert(
+                "INSERT INTO lg_knowledge_chunks (interview_id, content_type, text, anonymized_text, approved_for_rag, approved_for_publication, status) 
+                 VALUES (:interview_id, :type, :text, :anon, 0, 0, 'pending')",
+                [
+                    'interview_id' => $interviewId,
+                    'type' => $c['content_type'],
+                    'text' => $c['text'],
+                    'anon' => $c['text']
+                ]
+            );
+        }
+
+        // 7. Mark interview as completed
+        DB::query(
+            "UPDATE lg_interviews SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE interview_id = :id",
+            ['id' => $interviewId]
+        );
+
+        return [
+            'story_summary' => $storySummary,
+            'main_lesson' => $mainLesson,
+            'turning_point' => $turningPoint,
+            'outcome' => $outcome,
+            'advice' => $advice,
+            'funny_moment' => $funnyMoment,
+            'representative_quote' => $representativeQuote
+        ];
+    }
 }
+
