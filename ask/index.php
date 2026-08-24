@@ -236,16 +236,6 @@ require_once __DIR__ . '/../includes/header.php';
                                 📜 Sourced from verified anonymous stories
                             </div>
 
-                            <?php if (!empty($msg['sources'])): ?>
-                                <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-mint-border); font-size: 0.85rem;">
-                                    <strong style="color: var(--color-primary); display: block; margin-bottom: 0.25rem;">📚 Wisdom Excerpts:</strong>
-                                    <?php foreach ($msg['sources'] as $src): ?>
-                                        <div style="margin-bottom: 0.2rem; color: var(--color-text-muted);">
-                                            • <em><?php echo htmlspecialchars($src['author']); ?>:</em> “<?php echo htmlspecialchars($src['text']); ?>”
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 <?php endforeach; ?>
