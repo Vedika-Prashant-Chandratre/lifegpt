@@ -10,8 +10,8 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 
-// Validate CSRF token in HTTP headers
-CSRF::validateRequest();
+// Validate as a JSON AJAX request (serverless-safe, no session dependency)
+CSRF::validateAjax();
 
 // Parse JSON request body
 $rawBody = file_get_contents('php://input');

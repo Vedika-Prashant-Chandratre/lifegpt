@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({ interview_uuid: interviewUuid })
         })
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({
                 interview_uuid: interviewUuid,
