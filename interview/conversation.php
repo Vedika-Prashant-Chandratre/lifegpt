@@ -68,7 +68,7 @@ require_once __DIR__ . '/../includes/header.php';
             <div>
                 <span class="step-badge" style="background: var(--color-amber-light); color: var(--color-amber); margin-bottom: 0.35rem;">PRIVACY LEVEL</span>
                 <strong style="display: block; font-size: 1.05rem; color: var(--color-text-main);">
-                    <?php echo $isLoggedIn ? 'Registered Member Story' : '100% Anonymous Contributor'; ?>
+                    <?php echo $isLoggedIn ? 'Registered Member Story' : 'Guest Contributor'; ?>
                 </strong>
             </div>
         </div>

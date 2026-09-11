@@ -63,7 +63,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <div style="width: 64px; height: 64px; background-color: var(--color-amber-light); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.25rem;">💬</div>
                 <h2 style="font-size: 1.85rem; margin-bottom: 0.75rem;">AskGPT</h2>
                 <p class="text-sm" style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 1.5rem;">
-                    Search the collective wisdom archive. Explore life advice, career insights, and personal lessons shared by contributors around the world.
+                    Search the collective wisdom archive. Explore life advice, career insights, and personal lessons shared by contributors.
                 </p>
                 
                 <ul style="list-style: none; margin-bottom: 2rem;">
@@ -74,7 +74,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <span style="color: var(--color-amber); font-weight: bold;">💬</span> Explore wisdom topics & recent searches
                     </li>
                     <li style="margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.6rem; font-size: 0.95rem;">
-                        <span style="color: var(--color-amber); font-weight: bold;">💬</span> Citations sourced from verified anonymous stories
+                        <span style="color: var(--color-amber); font-weight: bold;">💬</span> AI-assisted search across contributed stories
                     </li>
                 </ul>
             </div>

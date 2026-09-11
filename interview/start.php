@@ -97,7 +97,7 @@ require_once __DIR__ . '/../includes/header.php';
             </p>
         <?php else: ?>
             <span class="step-badge" style="background-color: var(--color-mint-bg); color: var(--color-primary);">GUEST STORY SETUP (STEP 1 OF 2)</span>
-            <h1 style="font-size: 2.75rem; margin-bottom: 0.5rem; color: var(--color-primary);">Customize Your Anonymous Story Session</h1>
+            <h1 style="font-size: 2.75rem; margin-bottom: 0.5rem; color: var(--color-primary);">Customize Your Guest Story Session</h1>
             <p class="text-sm" style="font-size: 1.1rem; color: var(--color-text-muted);">Choose your host, story theme, and privacy preferences before you begin.</p>
         <?php endif; ?>
     </div>
@@ -222,8 +222,8 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="form-check">
                     <input type="checkbox" id="is_anonymous" name="is_anonymous" class="form-check-input" checked value="1">
                     <label for="is_anonymous" class="form-check-label">
-                        <strong>Participate 100% Anonymously</strong><br>
-                        <span class="text-sm">Your real identity will never be exposed or stored in search results.</span>
+                        <strong>Participate Without Displaying Name</strong><br>
+                        <span class="text-sm">No account is required. You may participate without displaying your name. Please avoid sharing information that could identify you or someone else.</span>
                     </label>
                 </div>
             <?php endif; ?>

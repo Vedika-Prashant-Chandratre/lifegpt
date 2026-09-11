@@ -10,6 +10,16 @@ $user = Auth::getCurrentUser();
 $isAdmin = Auth::isAdmin();
 
 $currentPage = basename($_SERVER['PHP_SELF']);
+$rootIndexPath = realpath(dirname(__DIR__) . '/index.php');
+$isHomePage = false;
+if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME']) === $rootIndexPath) {
+    $isHomePage = true;
+} elseif ($currentPage === 'index.php') {
+    $phpSelf = $_SERVER['PHP_SELF'] ?? '';
+    if (strpos($phpSelf, '/ask/') === false && strpos($phpSelf, '/dashboard/') === false && strpos($phpSelf, '/admin/') === false) {
+        $isHomePage = true;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,21 +41,27 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <span class="logo-sub">A FiftyIsNifty research initiative</span>
             </a>
             
-            <!-- Center is clean and empty per specification -->
-            <div></div>
+            <!-- Mobile Menu Toggle Button -->
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+                ☰
+            </button>
 
-            <!-- Right Header Action: Admin Portal Pill Button & User Avatar -->
-            <div style="display: flex; align-items: center; gap: 1rem;">
+            <!-- Main Visitor Navigation Links -->
+            <nav class="nav-menu" id="navMenu">
+                <a href="<?php echo APP_URL; ?>/" class="nav-link <?php echo $isHomePage ? 'active' : ''; ?>">Home</a>
+                <a href="<?php echo APP_URL; ?>/how-it-works.php" class="nav-link <?php echo ($currentPage === 'how-it-works.php') ? 'active' : ''; ?>">How It Works</a>
+                <a href="<?php echo APP_URL; ?>/interview/start.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/interview/') !== false) ? 'active' : ''; ?>">Share a Story</a>
+                <a href="<?php echo APP_URL; ?>/ask/" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/ask/') !== false) ? 'active' : ''; ?>">Ask LifeGPT</a>
                 <?php if ($isLoggedIn): ?>
-                    <a href="<?php echo APP_URL; ?>/account/choice.php" class="btn btn-secondary" style="min-height: 42px; padding: 0.35rem 1.1rem; font-size: 0.9rem;">
-                        👋 <?php echo htmlspecialchars($user['display_name']); ?>
+                    <a href="<?php echo APP_URL; ?>/dashboard/" class="btn btn-secondary" style="min-height: 40px; padding: 0.35rem 1.25rem; font-size: 0.9rem;">
+                        Dashboard
+                    </a>
+                <?php else: ?>
+                    <a href="<?php echo APP_URL; ?>/account/login.php" class="btn btn-secondary" style="min-height: 40px; padding: 0.35rem 1.25rem; font-size: 0.9rem;">
+                        Sign In
                     </a>
                 <?php endif; ?>
-
-                <a href="<?php echo APP_URL; ?>/admin/login.php" class="btn btn-primary" style="background-color: var(--color-primary); color: #FFFFFF; font-size: 0.9rem; min-height: 42px; padding: 0.35rem 1.25rem;">
-                    🔐 Admin Portal
-                </a>
-            </div>
+            </nav>
         </div>
     </header>
 
@@ -76,6 +92,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <div style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.25rem;">🎙️</div>
                 <h3 style="font-size: 1.45rem; margin-bottom: 0.5rem;">Talk or Type at Your Own Pace</h3>
                 <p class="text-sm">Choose from customized AI host personas like a Curious Grandchild or Journalist. Speak your answers aloud using voice recognition or type them in. Review and edit your responses anytime.</p>
+                <div style="background: var(--color-bg-base); border-left: 3px solid var(--color-primary); padding: 0.6rem 0.85rem; border-radius: 6px; margin-top: 0.75rem; font-size: 0.85rem; color: var(--color-text-main);">
+                    <strong>Example:</strong> Maria shared how she changed careers at 52. LifeGPT asked five follow-up questions, created a summary, and extracted three lessons for others considering a career change.
+                </div>
             </div>
 
             <!-- Step 3: Privacy & Control -->
@@ -83,7 +102,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <span class="step-badge">STEP 3 OF 4 — PRIVACY</span>
                 <div style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.25rem;">🔒</div>
                 <h3 style="font-size: 1.45rem; margin-bottom: 0.5rem;">You Are in Complete Control</h3>
-                <p class="text-sm">Participate 100% anonymously without an account, or sign in to save audio recordings and AI-generated transcripts to your private archive. Review and edit everything before sharing.</p>
+                <p class="text-sm">No account is required. You may participate without displaying your name. Please avoid sharing information that could identify you or someone else. Review and edit everything before sharing, or sign in to save your private archive.</p>
             </div>
 
             <!-- Step 4: Ready to Inspire -->
@@ -91,7 +110,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <span class="step-badge">STEP 4 OF 4 — GET STARTED</span>
                 <div style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.25rem;">🎉</div>
                 <h3 style="font-size: 1.45rem; margin-bottom: 0.5rem;">Ready to Inspire Someone?</h3>
-                <p class="text-sm">Your anonymized insights join a growing library of real-life stories that guide students, career switchers, and seekers around the world.</p>
+                <p class="text-sm">Your contributed insights join a growing library of real-life stories that guide students, career switchers, and seekers.</p>
             </div>
 
             <!-- Dots Indicator -->
@@ -159,6 +178,18 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             } else {
                 nextBtn.innerHTML = 'Next Step →';
             }
+        }
+
+        // Mobile Nav Toggle
+        const navToggle = document.getElementById('navToggle');
+        const navMenu = document.getElementById('navMenu');
+        if (navToggle && navMenu) {
+            navToggle.addEventListener('click', function() {
+                const expanded = this.getAttribute('aria-expanded') === 'true' || false;
+                navMenu.classList.toggle('show');
+                this.setAttribute('aria-expanded', !expanded);
+                this.innerHTML = expanded ? '☰' : '✕';
+            });
         }
     </script>
     <main class="main-content">

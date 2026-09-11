@@ -121,10 +121,10 @@ require_once __DIR__ . '/../includes/header.php';
             </button>
         </form>
 
-        <!-- Anonymous Guest Shortcut Link -->
+        <!-- Guest Shortcut Link -->
         <div style="text-align: center; margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border);">
             <a href="<?php echo APP_URL; ?>/interview/start.php" class="btn btn-outline" style="width: 100%; justify-content: center;">
-                Continue as Anonymous Guest →
+                Continue as Guest (No Account Required) →
             </a>
         </div>
     </div>

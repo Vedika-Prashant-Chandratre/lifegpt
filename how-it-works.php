@@ -9,7 +9,7 @@ require_once __DIR__ . '/includes/header.php';
 <div style="max-width: 800px; margin: 0 auto;">
     <h1 style="margin-bottom: 1.5rem; text-align: center;">How LifeGPT Works</h1>
     <p class="text-lg" style="color: var(--color-text-muted); text-align: center; margin-bottom: 3rem;">
-        LifeGPT is designed to collect the collective wisdom of older adults and organize it for future generations, while giving contributors absolute control over their privacy.
+        LifeGPT is designed to collect the collective wisdom of older adults and organize it for future generations, while giving contributors clear choices over how their stories are saved and shared.
     </p>
 
     <div class="card" style="margin-bottom: 2.5rem;">
@@ -23,8 +23,14 @@ require_once __DIR__ . '/includes/header.php';
             <li><strong>Lessons & Outcomes:</strong> What you learned and what advice you would give to others facing similar situations.</li>
         </ul>
         <p>
-            You can choose to answer by **typing** or by **speaking** using your web browser's voice recognition. The interview takes between 3 to 15 minutes, depending on the duration you select.
+            You can choose to answer by <strong>typing</strong> or by <strong>speaking</strong> using your web browser's voice recognition. The interview takes between 3 to 15 minutes, depending on the duration you select.
         </p>
+        <div style="background: var(--color-mint-bg); border-left: 4px solid var(--color-primary); padding: 1rem 1.25rem; border-radius: var(--radius-sm); margin-top: 1.25rem;">
+            <strong style="color: var(--color-primary); display: block; font-size: 0.95rem; margin-bottom: 0.35rem;">Real-World Example:</strong>
+            <p style="font-size: 0.95rem; line-height: 1.55; color: var(--color-text-main); margin-bottom: 0;">
+                “Maria shared how she changed careers at 52. LifeGPT asked five follow-up questions, created a summary, and extracted three lessons for others considering a career change.”
+            </p>
+        </div>
     </div>
 
     <div class="card" style="margin-bottom: 2.5rem;">
@@ -76,7 +82,7 @@ require_once __DIR__ . '/includes/header.php';
         </p>
         <ul style="margin-left: 2rem; margin-bottom: 1.5rem;">
             <li>Your story can be saved in your private dashboard.</li>
-            <li>Your anonymous/anonymized answers can be searched by visitors using <strong>Ask LifeGPT</strong>.</li>
+            <li>Your contributed answers can be searched by visitors using <strong>Ask LifeGPT</strong> (AI-assisted search across contributed stories).</li>
             <li>Your quotes can be featured in public feeds.</li>
         </ul>
         <p>
@@ -85,7 +91,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 
     <div style="text-align: center; margin-top: 3rem;">
-        <a href="<?php echo APP_URL; ?>/interview/choose-persona.php" class="btn btn-primary text-lg">Start Sharing Your Wisdom</a>
+        <a href="<?php echo APP_URL; ?>/interview/start.php" class="btn btn-primary text-lg">Start Sharing Your Wisdom</a>
     </div>
 </div>
 

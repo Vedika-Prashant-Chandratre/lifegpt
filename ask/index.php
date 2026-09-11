@@ -160,7 +160,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <!-- Clean Guest Mode Footer -->
                 <div>
                     <span class="step-badge" style="background: var(--color-mint-bg); color: var(--color-primary); font-size: 0.8rem; margin-bottom: 0.35rem;">
-                        100% ANONYMOUS GUEST MODE
+                        GUEST SEARCH MODE
                     </span>
                     <p class="text-sm" style="font-size: 0.825rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
                         No account or login required.
@@ -181,7 +181,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <span style="font-size: 1.5rem;">🤖</span>
                 <div>
                     <h2 style="font-size: 1.25rem; margin-bottom: 0;">Ask LifeGPT Search</h2>
-                    <span class="text-sm" style="font-size: 0.85rem;">Powered by RAG & Verified Anonymous Stories</span>
+                    <span class="text-sm" style="font-size: 0.85rem;">AI-assisted search across contributed stories</span>
                 </div>
             </div>
             
@@ -195,9 +195,26 @@ require_once __DIR__ . '/../includes/header.php';
                 <div style="text-align: center; margin: auto 0; padding: 2rem;">
                     <div style="width: 72px; height: 72px; background: var(--color-mint-bg); border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 2.4rem; margin-bottom: 1.25rem;">🤖</div>
                     <h2 style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--color-primary);">Ready when you are.</h2>
-                    <p class="text-sm" style="max-width: 520px; margin: 0 auto 2rem auto; font-size: 1.05rem;">
-                        Ask any question to search real life stories, lessons, and insights gathered from contributors around the world.
+                    <p class="text-sm" style="max-width: 520px; margin: 0 auto 1.75rem auto; font-size: 1.05rem;">
+                        Ask any question to search real life stories, lessons, and practical insights shared by contributors.
                     </p>
+
+                    <!-- Example Q&A Showcase Card -->
+                    <div style="max-width: 720px; margin: 0 auto 2rem auto; text-align: left; background: #FFFFFF; border: 1px solid var(--color-border); border-left: 4px solid var(--color-amber); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-subtle);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span class="step-badge" style="background: var(--color-amber-light); color: var(--color-amber); font-size: 0.75rem; margin-bottom: 0;">SAMPLE SEARCH</span>
+                            <span class="text-sm" style="font-size: 0.8rem;">Click prompt below to search</span>
+                        </div>
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-primary); margin-bottom: 0.35rem;">
+                            Q: “What advice do people share about changing careers later in life?”
+                        </div>
+                        <p style="font-size: 0.9rem; line-height: 1.55; color: var(--color-text-main); margin-bottom: 0.5rem;">
+                            LifeGPT: “Contributors emphasize starting with small freelance experiments before quitting, treating decades of problem-solving as your greatest asset, and being comfortable being a beginner again.”
+                        </p>
+                        <div style="font-size: 0.78rem; color: var(--color-primary); font-weight: 600;">
+                            📜 AI-assisted search across contributed stories
+                        </div>
+                    </div>
 
                     <!-- 3 Prompt Suggestion Cards -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; max-width: 780px; margin: 0 auto;">
@@ -233,7 +250,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem;"><?php echo nl2br(htmlspecialchars($msg['content'])); ?></p>
                             
                             <div class="citation-tag">
-                                📜 Sourced from verified anonymous stories
+                                📜 AI-assisted search across contributed stories
                             </div>
 
                         </div>
