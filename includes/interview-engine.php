@@ -205,7 +205,7 @@ class InterviewEngine {
         $topicName = $interview['topic_name'] ?? "Life Experience";
         $targetLimit = self::getTargetLimit($interview['duration_type']);
         
-        $language = $interview['language'] ?? 'en';
+        $language = $interview['language'] ?? ($_SESSION['ui_lang'] ?? 'en');
         $langInstruction = match($language) {
             'hi' => "IMPORTANT: You MUST ask all your questions in Hindi language (Devanagari script). Respond only in Hindi.",
             'mr' => "IMPORTANT: You MUST ask all your questions in Marathi language (Devanagari script). Respond only in Marathi.",
@@ -224,7 +224,7 @@ class InterviewEngine {
             "You are conducting a structured life story recording session on the topic: \"{$topicName}\".\n" .
             "Your goal is to guide the contributor to share meaningful life lessons, turning points, and advice.\n" .
             "Target number of questions: {$targetLimit}.\n" .
-            "Be empathetic, natural, and asking only ONE question at a time.\n" .
+            "Be empathetic, natural, and asking only ONE question at a time.\n" . "Do not use or mention personal names (such as Linda, etc.) in your questions.\n" .
             "Do not ask multiple questions in a single response. Avoid using any markdown formatting (like asterisks or hashtags) in your questions.\n" .
             "Each question MUST be genuinely different from anything already asked — explore a new aspect of the story.\n" .
             $langInstruction .

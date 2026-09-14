@@ -74,13 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
 
     $contextText = "";
     foreach ($chunks as $index => $c) {
-        $attr = "Anonymous Contributor";
-        if (!empty($c['attribution_value']) && $c['attribution_type'] !== 'anonymous') {
-            $attr = $c['attribution_value'];
-        }
-        $contextText .= "[" . ($index + 1) . "] Insight by " . $attr . ": " . $c['anonymized_text'] . "\n";
+        $contextText .= "[" . ($index + 1) . "] Real Experience Insight: " . $c['anonymized_text'] . "\n";
         $sources[] = [
-            'author' => $attr,
+            'author' => 'Anonymous Contributor',
             'text' => mb_substr($c['anonymized_text'], 0, 140) . '...'
         ];
     }
@@ -99,13 +95,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
                 }
             }
 
-            $systemPrompt = "You are Ask LifeGPT, an AI assistant trained on a growing collection of real human life experiences, advice, and wisdom. " .
-                "Answer the user's question in a warm, natural, human conversation style based SPECIFICALLY on the provided context chunks â€” stay closely relevant to the question asked. " .
-                "Do not give generic advice unrelated to what is in the context. " .
-                "Avoid using markdown formatting (like asterisks, hashtags, or bullet characters) in the response text; format it as clean, readable paragraphs suitable for a chat bubble. " .
-                "Each answer must bring NEW insights not already mentioned." .
-                $historyContext .
-                " You MUST return a JSON object containing an \"answer\" key with your response text.";
+                        // Determine language for AI response based on current UI language preference
+            $activeLang = $_SESSION['ui_lang'] ?? $_COOKIE['ui_lang'] ?? 'en';
+            $langInstruction = match($activeLang) {
+                'hi' => "CRITICAL LANGUAGE INSTRUCTION: You MUST formulate your entire answer in Hindi (हिन्दी) in Devanagari script. Ensure the response is warm, natural, respectful, and fluent conversational Hindi.",
+                'mr' => "CRITICAL LANGUAGE INSTRUCTION: You MUST formulate your entire answer in Marathi (मराठी) in Devanagari script. Ensure the response is warm, natural, respectful, and fluent conversational Marathi.",
+                default => "CRITICAL LANGUAGE INSTRUCTION: Answer in warm, fluent, conversational English."
+            };
+
+            $systemPrompt = "You are Ask LifeGPT, an AI assistant trained on a growing collection of real human life experiences, advice, and wisdom.\n" .
+                "Answer the user's question in a warm, natural, human conversation style based SPECIFICALLY on the provided context chunks — stay closely relevant to the question asked.\n" .
+                "Do not give generic advice unrelated to what is in the context.\n" .
+                "CRITICAL PRIVACY RULE: NEVER mention, cite, or invent any person's name or persona name in your response (such as Linda, Maria, Helen, John, David, Robert, or any other name). Do not write 'Linda shared', 'According to Linda', or start with a name prefix like 'Linda: '. Present the insights as collective human wisdom, using phrases like 'A contributor shared...', 'People who have navigated this suggest...', 'One common reflection is...', or speak directly in an empathetic conversational tone.\n" .
+                "Avoid using markdown formatting (like asterisks, hashtags, or bullet characters) in the response text; format it as clean, readable paragraphs suitable for a chat bubble.\n" .
+                "Each answer must bring NEW insights not already mentioned.\n" .
+                $langInstruction . "\n" .
+                $historyContext . "\n" .
+                "You MUST return a JSON object containing an \"answer\" key with your response text.";
 
             $messages = [
                 ['role' => 'system', 'content' => $systemPrompt],
@@ -114,7 +120,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
             
             $openAiResult = OpenAIClient::chatCompletion($messages);
             if (!empty($openAiResult['answer'])) {
-                $aiResponse = stripMarkdown($openAiResult['answer']);
+                $rawAns = stripMarkdown($openAiResult['answer']);
+                // Strict privacy sanitization: eliminate any persona names such as Linda
+                $rawAns = preg_replace('/^(?:Linda|Maria|Helen|John|David|Robert|Contributor)\s*:\s*/iu', '', $rawAns);
+                $rawAns = preg_replace('/\b(?:Linda|Maria|Helen|John|David|Robert)\b/iu', 'a contributor', $rawAns);
+                $aiResponse = $rawAns;
             } else {
                 $aiResponse = stripMarkdown("Based on our collective wisdom archive: " . mb_substr($contextText, 0, 280) . "... Always focus on what you can control, stay curious, and cherish your relationships.");
             }
