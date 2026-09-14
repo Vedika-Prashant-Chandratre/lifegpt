@@ -7,6 +7,31 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/openai.php';
+require_once __DIR__ . '/../includes/i18n.php';
+
+/**
+ * Strip common markdown formatting so AI answers display as clean plain text.
+ */
+function stripMarkdown(string $text): string {
+    // Remove **bold** and __bold__
+    $text = preg_replace('/\*\*(.+?)\*\*/s', '$1', $text);
+    $text = preg_replace('/__(.+?)__/s', '$1', $text);
+    // Remove *italic* and _italic_
+    $text = preg_replace('/\*(.+?)\*/s', '$1', $text);
+    $text = preg_replace('/_(.+?)_/s', '$1', $text);
+    // Remove ### headings
+    $text = preg_replace('/^#{1,6}\s*/m', '', $text);
+    // Remove bullet points (- item or * item)
+    $text = preg_replace('/^[\-\*]\s+/m', '', $text);
+    // Remove numbered lists (1. item)
+    $text = preg_replace('/^\d+\.\s+/m', '', $text);
+    // Remove horizontal rules
+    $text = preg_replace('/^[\-\_\*]{3,}$/m', '', $text);
+    // Collapse multiple blank lines
+    $text = preg_replace('/\n{3,}/', "\n\n", $text);
+    return trim($text);
+}
+
 
 $hideFooter = true;
 $isLoggedIn = Auth::isLoggedIn();
@@ -75,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
             }
 
             $systemPrompt = "You are Ask LifeGPT, an AI assistant trained on a growing collection of real human life experiences, advice, and wisdom. " .
-                "Answer the user's question in a warm, natural, human conversation style based SPECIFICALLY on the provided context chunks — stay closely relevant to the question asked. " .
+                "Answer the user's question in a warm, natural, human conversation style based SPECIFICALLY on the provided context chunks â€” stay closely relevant to the question asked. " .
                 "Do not give generic advice unrelated to what is in the context. " .
                 "Avoid using markdown formatting (like asterisks, hashtags, or bullet characters) in the response text; format it as clean, readable paragraphs suitable for a chat bubble. " .
                 "Each answer must bring NEW insights not already mentioned." .
@@ -89,9 +114,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
             
             $openAiResult = OpenAIClient::chatCompletion($messages);
             if (!empty($openAiResult['answer'])) {
-                $aiResponse = $openAiResult['answer'];
+                $aiResponse = stripMarkdown($openAiResult['answer']);
             } else {
-                $aiResponse = "Based on our collective wisdom archive: " . mb_substr($contextText, 0, 280) . "... Always focus on what you can control, stay curious, and cherish your relationships.";
+                $aiResponse = stripMarkdown("Based on our collective wisdom archive: " . mb_substr($contextText, 0, 280) . "... Always focus on what you can control, stay curious, and cherish your relationships.");
             }
         } else {
             $aiResponse = "Our contributors share that every life challenge offers a valuable lesson. When facing uncertainty, focusing on core values, patience, and clear communication helps you navigate tough decisions.";
@@ -122,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
     } elseif ($keywordMatchCount >= 1) {
         $accuracyScore = 60 + ($keywordMatchCount * 8);
     } else {
-        // Fell back to generic chunks — lower confidence
+        // Fell back to generic chunks â€” lower confidence
         $accuracyScore = min(35, max(10, intval(($totalApproved / 10) * 3)));
     }
     // Clamp to 100
@@ -139,7 +164,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'new_chat') {
     exit;
 }
 
-$pageTitle = "Ask LifeGPT — Collective Wisdom Search";
+$pageTitle = "Ask LifeGPT â€” Collective Wisdom Search";
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -151,33 +176,66 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Sidebar Header -->
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
                 <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <span style="font-size: 1.6rem;">🌱</span>
+                    <span style="font-size: 1.6rem;">ðŸŒ±</span>
                     <strong style="font-size: 1.25rem; color: var(--color-primary);">Ask LifeGPT</strong>
                 </div>
             </div>
 
             <?php if ($isLoggedIn): ?>
                 <a href="<?php echo APP_URL; ?>/ask/?action=new_chat" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem;">
-                    <span>➕</span> New Chat
+                    <span>âž•</span> New Chat
                 </a>
             <?php endif; ?>
 
-            <!-- Explore Wisdom Topics -->
-            <div style="margin-bottom: 1.5rem;">
-                <h3 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.75rem;">Explore Wisdom Topics</h3>
-                <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                    <a href="javascript:void(0)" onclick="askQuestion('Career & work decisions')" style="font-size: 0.9rem; padding: 0.5rem 0.85rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
-                        💼 Career & Work
+                        <!-- Explore Wisdom Topics -->
+            <div style="margin-bottom: 1.25rem;">
+                <h3 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.6rem;"><?php echo $t['ask_topics']; ?></h3>
+                <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                    <a href="javascript:void(0)" onclick="askQuestion('What career advice do experienced people share about work and success?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                        <?php echo $t['topic_career']; ?>
                     </a>
-                    <a href="javascript:void(0)" onclick="askQuestion('Family and relationships wisdom')" style="font-size: 0.9rem; padding: 0.5rem 0.85rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
-                        ❤️ Family & Relationships
+                    <a href="javascript:void(0)" onclick="askQuestion('What have people learned about maintaining healthy family relationships?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                        <?php echo $t['topic_family']; ?>
                     </a>
-                    <a href="javascript:void(0)" onclick="askQuestion('Overcoming major life turning points')" style="font-size: 0.9rem; padding: 0.5rem 0.85rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
-                        🌿 Turning Points
+                    <a href="javascript:void(0)" onclick="askQuestion('How do people successfully navigate major life turning points and changes?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                        <?php echo $t['topic_turning']; ?>
                     </a>
-                    <a href="javascript:void(0)" onclick="askQuestion('Humor and funny life mishaps')" style="font-size: 0.9rem; padding: 0.5rem 0.85rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
-                        🎭 Humor & Mishaps
+                    <a href="javascript:void(0)" onclick="askQuestion('What wisdom do people share about staying healthy and active as they age?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                        <?php echo $t['topic_health']; ?>
                     </a>
+                    <a href="javascript:void(0)" onclick="askQuestion('What financial lessons and money advice do experienced people share?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                        <?php echo $t['topic_money']; ?>
+                    </a>
+                    <a href="javascript:void(0)" onclick="askQuestion('What funny life mishaps and humorous stories do people share?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                        <?php echo $t['topic_humor']; ?>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Common Questions -->
+            <div style="margin-bottom: 1rem;">
+                <h3 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.6rem;"><?php echo $t['ask_common_q']; ?></h3>
+                <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                    <?php
+                    $commonQs = [
+                        [$t['q1'], $t['q1_full']],
+                        [$t['q2'], $t['q2_full']],
+                        [$t['q3'], $t['q3_full']],
+                        [$t['q4'], $t['q4_full']],
+                        [$t['q5'], $t['q5_full']],
+                        [$t['q6'], $t['q6_full']],
+                        [$t['q7'], $t['q7_full']],
+                        [$t['q8'], $t['q8_full']],
+                        [$t['q9'], $t['q9_full']],
+                        [$t['q10'], $t['q10_full']],
+                    ];
+                    foreach ($commonQs as $q):
+                    ?>
+                    <a href="javascript:void(0)" onclick="askQuestion(<?php echo json_encode($q[1]); ?>)"
+                       style="font-size: 0.8rem; padding: 0.4rem 0.65rem; background: var(--color-mint-bg); border-radius: var(--radius-sm); color: var(--color-primary); line-height: 1.45; border-left: 3px solid var(--color-primary); display: block;">
+                        <?php echo htmlspecialchars($q[0]); ?>
+                    </a>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>
@@ -187,7 +245,7 @@ require_once __DIR__ . '/../includes/header.php';
             <?php if ($isLoggedIn): ?>
                 <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
                     <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--color-primary); font-weight: bold;">
-                        👤
+                        ðŸ‘¤
                     </div>
                     <div>
                         <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">
@@ -200,7 +258,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <a href="<?php echo APP_URL; ?>/account/profile.php" style="font-size: 0.85rem; color: var(--color-text-muted);">Settings</a>
                     <a href="<?php echo APP_URL; ?>/account/logout.php" class="btn btn-outline" style="min-height: 34px; padding: 0.25rem 0.75rem; font-size: 0.85rem;">
-                        🚪 Log Out
+                        ðŸšª Log Out
                     </a>
                 </div>
             <?php else: ?>
@@ -213,7 +271,7 @@ require_once __DIR__ . '/../includes/header.php';
                         No account or login required.
                     </p>
                     <a href="<?php echo APP_URL; ?>/" style="font-size: 0.85rem; color: var(--color-primary); font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
-                        ← Return to Homepage
+                        â† Return to Homepage
                     </a>
                 </div>
             <?php endif; ?>
@@ -225,7 +283,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Chat Header -->
         <div class="ask-chat-header">
             <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <span style="font-size: 1.5rem;">🤖</span>
+                <span style="font-size: 1.5rem;">ðŸ¤–</span>
                 <div>
                     <h2 style="font-size: 1.25rem; margin-bottom: 0;">Ask LifeGPT Search</h2>
                     <span class="text-sm" style="font-size: 0.85rem;">AI-assisted search across contributed stories</span>
@@ -240,7 +298,7 @@ require_once __DIR__ . '/../includes/header.php';
             <?php if (empty($chatHistory)): ?>
                 <!-- Empty State -->
                 <div style="text-align: center; margin: auto 0; padding: 2rem;">
-                    <div style="width: 72px; height: 72px; background: var(--color-mint-bg); border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 2.4rem; margin-bottom: 1.25rem;">🤖</div>
+                    <div style="width: 72px; height: 72px; background: var(--color-mint-bg); border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 2.4rem; margin-bottom: 1.25rem;">ðŸ¤–</div>
                     <h2 style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--color-primary);">Ready when you are.</h2>
                     <p class="text-sm" style="max-width: 520px; margin: 0 auto 1.75rem auto; font-size: 1.05rem;">
                         Ask any question to search real life stories, lessons, and practical insights shared by contributors.
@@ -253,31 +311,31 @@ require_once __DIR__ . '/../includes/header.php';
                             <span class="text-sm" style="font-size: 0.8rem;">Click prompt below to search</span>
                         </div>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-primary); margin-bottom: 0.35rem;">
-                            Q: “What advice do people share about changing careers later in life?”
+                            Q: â€œWhat advice do people share about changing careers later in life?â€
                         </div>
                         <p style="font-size: 0.9rem; line-height: 1.55; color: var(--color-text-main); margin-bottom: 0.5rem;">
-                            LifeGPT: “Contributors emphasize starting with small freelance experiments before quitting, treating decades of problem-solving as your greatest asset, and being comfortable being a beginner again.”
+                            LifeGPT: â€œContributors emphasize starting with small freelance experiments before quitting, treating decades of problem-solving as your greatest asset, and being comfortable being a beginner again.â€
                         </p>
                         <div style="font-size: 0.78rem; color: var(--color-primary); font-weight: 600;">
-                            📜 AI-assisted search across contributed stories
+                            ðŸ“œ AI-assisted search across contributed stories
                         </div>
                     </div>
 
                     <!-- 3 Prompt Suggestion Cards -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; max-width: 780px; margin: 0 auto;">
                         <div class="card card-hover" onclick="askQuestion('What is the best career advice older adults share?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
-                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">💡 Career Guidance</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">“What is the best career advice older adults share?”</p>
+                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">ðŸ’¡ Career Guidance</strong>
+                            <p class="text-sm" style="margin-bottom: 0;">â€œWhat is the best career advice older adults share?â€</p>
                         </div>
 
                         <div class="card card-hover" onclick="askQuestion('How do people handle major life turning points?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
-                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">🌿 Turning Points</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">“How do people handle major life turning points?”</p>
+                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">ðŸŒ¿ Turning Points</strong>
+                            <p class="text-sm" style="margin-bottom: 0;">â€œHow do people handle major life turning points?â€</p>
                         </div>
 
                         <div class="card card-hover" onclick="askQuestion('What funny mishaps do people laugh about later?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
-                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">🎭 Humor & Perspective</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">“What funny mishaps do people laugh about later?”</p>
+                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">ðŸŽ­ Humor & Perspective</strong>
+                            <p class="text-sm" style="margin-bottom: 0;">â€œWhat funny mishaps do people laugh about later?â€</p>
                         </div>
                     </div>
                 </div>
@@ -292,7 +350,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php else: ?>
                         <div class="chat-bubble chat-bubble-ai" style="align-self: flex-start; max-width: 85%;">
                             <div class="chat-bubble-meta" style="display: flex; align-items: center; gap: 0.4rem;">
-                                <span>🤖</span> <strong>LifeGPT Host</strong> &bull; <?php echo $msg['time']; ?>
+                                <span>ðŸ¤–</span> <strong>LifeGPT Host</strong> &bull; <?php echo $msg['time']; ?>
                             </div>
                             <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem;"><?php echo nl2br(htmlspecialchars($msg['content'])); ?></p>
                             
@@ -303,8 +361,8 @@ require_once __DIR__ . '/../includes/header.php';
                             ?>
                             <div style="margin-top: 0.6rem; margin-bottom: 0.5rem;">
                                 <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: 0.25rem;">
-                                    <span>🎯 Answer Accuracy</span>
-                                    <strong style="color: <?php echo $barColor; ?>;"><?php echo $score; ?>% — <?php echo $label; ?></strong>
+                                    <span>ðŸŽ¯ Answer Accuracy</span>
+                                    <strong style="color: <?php echo $barColor; ?>;"><?php echo $score; ?>% â€” <?php echo $label; ?></strong>
                                 </div>
                                 <div style="height: 6px; background: var(--color-border); border-radius: 99px; overflow: hidden;">
                                     <div style="height: 100%; width: <?php echo $score; ?>%; background: <?php echo $barColor; ?>; border-radius: 99px; transition: width 0.4s ease;"></div>
@@ -313,7 +371,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <?php endif; ?>
 
                             <div class="citation-tag">
-                                📜 AI-assisted search across contributed stories
+                                ðŸ“œ AI-assisted search across contributed stories
                             </div>
 
                         </div>
@@ -327,11 +385,11 @@ require_once __DIR__ . '/../includes/header.php';
             <form action="" method="POST" id="askForm" style="display: flex; gap: 0.75rem; align-items: center;">
                 <?php echo CSRF::getInput(); ?>
                 <button type="button" class="btn btn-outline" title="Voice Search" style="min-height: 48px; width: 48px; border-radius: 50%; padding: 0;">
-                    🎙️
+                    ðŸŽ™ï¸
                 </button>
                 <input type="text" name="query" id="askQueryInput" class="form-control" placeholder="Ask LifeGPT anything (e.g., How to navigate career change?)" required style="flex: 1; min-height: 50px; border-radius: var(--radius-pill);">
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.85rem;">
-                    Send ➔
+                    Send âž”
                 </button>
             </form>
         </div>
