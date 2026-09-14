@@ -205,12 +205,30 @@ class InterviewEngine {
         $topicName = $interview['topic_name'] ?? "Life Experience";
         $targetLimit = self::getTargetLimit($interview['duration_type']);
         
+        $language = $interview['language'] ?? 'en';
+        $langInstruction = match($language) {
+            'hi' => "IMPORTANT: You MUST ask all your questions in Hindi language (Devanagari script). Respond only in Hindi.",
+            'mr' => "IMPORTANT: You MUST ask all your questions in Marathi language (Devanagari script). Respond only in Marathi.",
+            default => "Ask questions in English."
+        };
+
+        // Build a list of previously asked questions to prevent repetition
+        $askedQuestions = array_filter(array_map(function($m) {
+            return ($m['role'] === 'interviewer') ? $m['text'] : null;
+        }, $dbMessages));
+        $askedList = !empty($askedQuestions)
+            ? "\n\nPreviously asked questions (DO NOT repeat or rephrase these):\n- " . implode("\n- ", array_values($askedQuestions))
+            : "";
+
         $systemText = $personaPrompt . "\n\n" .
             "You are conducting a structured life story recording session on the topic: \"{$topicName}\".\n" .
             "Your goal is to guide the contributor to share meaningful life lessons, turning points, and advice.\n" .
             "Target number of questions: {$targetLimit}.\n" .
             "Be empathetic, natural, and asking only ONE question at a time.\n" .
-            "Do not ask multiple questions in a single response. Avoid using any markdown formatting (like asterisks or hashtags) in your questions.";
+            "Do not ask multiple questions in a single response. Avoid using any markdown formatting (like asterisks or hashtags) in your questions.\n" .
+            "Each question MUST be genuinely different from anything already asked — explore a new aspect of the story.\n" .
+            $langInstruction .
+            $askedList;
 
         $apiMessages = [
             ['role' => 'system', 'content' => $systemText]

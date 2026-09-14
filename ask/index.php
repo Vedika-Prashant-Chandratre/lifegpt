@@ -62,7 +62,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
 
     try {
         if (!empty($contextText)) {
-            $systemPrompt = "You are Ask LifeGPT, an AI assistant trained on a growing collection of real human life experiences, advice, and wisdom. Answer the user's question in a warm, natural, human conversation style based on the provided context chunks. Avoid using markdown formatting (like asterisks, hashtags, or bullet characters) in the response text; format it as clean, readable paragraphs suitable for a chat bubble. You MUST return a JSON object containing an \"answer\" key with your response text.";
+            // Build conversation history summary to prevent repeated answers
+            $historyContext = '';
+            if (!empty($chatHistory)) {
+                $prevPairs = array_filter($chatHistory, fn($m) => $m['role'] === 'assistant');
+                if (!empty($prevPairs)) {
+                    $historyContext = "\n\nPrevious answers you already gave in this session (DO NOT repeat the same points or phrases):\n";
+                    foreach (array_values($prevPairs) as $i => $prev) {
+                        $historyContext .= ($i + 1) . ". " . mb_substr($prev['content'], 0, 200) . "...\n";
+                    }
+                }
+            }
+
+            $systemPrompt = "You are Ask LifeGPT, an AI assistant trained on a growing collection of real human life experiences, advice, and wisdom. " .
+                "Answer the user's question in a warm, natural, human conversation style based SPECIFICALLY on the provided context chunks — stay closely relevant to the question asked. " .
+                "Do not give generic advice unrelated to what is in the context. " .
+                "Avoid using markdown formatting (like asterisks, hashtags, or bullet characters) in the response text; format it as clean, readable paragraphs suitable for a chat bubble. " .
+                "Each answer must bring NEW insights not already mentioned." .
+                $historyContext .
+                " You MUST return a JSON object containing an \"answer\" key with your response text.";
+
             $messages = [
                 ['role' => 'system', 'content' => $systemPrompt],
                 ['role' => 'user', 'content' => "Context Wisdom:\n" . $contextText . "\n\nUser Question: " . $userQuery]
@@ -81,8 +100,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
         $aiResponse = "Based on real life stories in our archive: When navigating life's turning points, contributors frequently advise taking time to reflect, seeking perspective from those who came before, and trusting your resilience.";
     }
 
+    // --- Accuracy Score Calculation ---
+    // Score is based on how many relevant chunks were found and whether
+    // a keyword match was found (vs. falling back to generic results)
+    $keywordMatchCount = count(DB::fetchAll(
+        "SELECT chunk_id FROM lg_knowledge_chunks
+         WHERE (approved_for_rag = 1 OR status = 'approved')
+         AND (anonymized_text LIKE :q1 OR text LIKE :q2) LIMIT 5",
+        ['q1' => '%' . $userQuery . '%', 'q2' => '%' . $userQuery . '%']
+    ));
+    $totalApproved = (int)(DB::fetch(
+        "SELECT COUNT(*) as cnt FROM lg_knowledge_chunks WHERE approved_for_rag = 1 OR status = 'approved'"
+    )['cnt'] ?? 0);
+
+    if ($totalApproved === 0) {
+        $accuracyScore = 0;
+    } elseif ($keywordMatchCount >= 5) {
+        $accuracyScore = 95;
+    } elseif ($keywordMatchCount >= 3) {
+        $accuracyScore = 80;
+    } elseif ($keywordMatchCount >= 1) {
+        $accuracyScore = 60 + ($keywordMatchCount * 8);
+    } else {
+        // Fell back to generic chunks — lower confidence
+        $accuracyScore = min(35, max(10, intval(($totalApproved / 10) * 3)));
+    }
+    // Clamp to 100
+    $accuracyScore = min(100, $accuracyScore);
+
     $chatHistory[] = ['role' => 'user', 'content' => $userQuery, 'time' => date('g:i A')];
-    $chatHistory[] = ['role' => 'assistant', 'content' => $aiResponse, 'sources' => $sources, 'time' => date('g:i A')];
+    $chatHistory[] = ['role' => 'assistant', 'content' => $aiResponse, 'sources' => $sources, 'accuracy' => $accuracyScore, 'time' => date('g:i A')];
     $_SESSION['ask_history'] = $chatHistory;
 }
 
@@ -249,6 +296,22 @@ require_once __DIR__ . '/../includes/header.php';
                             </div>
                             <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem;"><?php echo nl2br(htmlspecialchars($msg['content'])); ?></p>
                             
+                            <?php if (isset($msg['accuracy'])): 
+                                $score = (int)$msg['accuracy'];
+                                $barColor = $score >= 80 ? '#16a34a' : ($score >= 50 ? '#d97706' : '#dc2626');
+                                $label    = $score >= 80 ? 'High Relevance' : ($score >= 50 ? 'Moderate Relevance' : 'Low Relevance');
+                            ?>
+                            <div style="margin-top: 0.6rem; margin-bottom: 0.5rem;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: 0.25rem;">
+                                    <span>🎯 Answer Accuracy</span>
+                                    <strong style="color: <?php echo $barColor; ?>;"><?php echo $score; ?>% — <?php echo $label; ?></strong>
+                                </div>
+                                <div style="height: 6px; background: var(--color-border); border-radius: 99px; overflow: hidden;">
+                                    <div style="height: 100%; width: <?php echo $score; ?>%; background: <?php echo $barColor; ?>; border-radius: 99px; transition: width 0.4s ease;"></div>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+
                             <div class="citation-tag">
                                 📜 AI-assisted search across contributed stories
                             </div>

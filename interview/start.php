@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * LifeGPT - Story Setup (Screen 2A)
  * Supports both Logged-In Member and Anonymous Guest storytelling setup.
@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $durationType = $_POST['duration_type'] ?? 'standard';
     $displayName = trim($_POST['display_name'] ?? ($isLoggedIn ? $user['display_name'] : ''));
     $isAnonymous = isset($_POST['is_anonymous']) ? 1 : 0;
+    $language = in_array($_POST['language'] ?? 'en', ['en', 'hi', 'mr']) ? ($_POST['language'] ?? 'en') : 'en';
 
     try {
         DB::beginTransaction();
@@ -34,12 +35,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $interviewId = DB::insert(
             "INSERT INTO lg_interviews (uuid, user_id, persona_id, topic_id, status, language, input_mode, duration_type) 
-             VALUES (:uuid, :user_id, :persona_id, :topic_id, 'in_progress', 'en', 'mixed', :duration_type)",
+             VALUES (:uuid, :user_id, :persona_id, :topic_id, 'in_progress', :language, 'mixed', :duration_type)",
             [
                 'uuid' => $uuid,
                 'user_id' => $userId,
                 'persona_id' => $personaId,
                 'topic_id' => $topicId,
+                'language' => $language,
                 'duration_type' => $durationType
             ]
         );
@@ -116,18 +118,18 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Section 1: Choose Persona -->
         <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-primary);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>🎭</span> Section 1: Choose Your AI Host Persona
+                <span>ðŸŽ­</span> Section 1: Choose Your AI Host Persona
             </h2>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
                 <?php foreach ($personas as $idx => $p): 
-                    $emoji = '🧒';
+                    $emoji = 'ðŸ§’';
                     switch($p['persona_key']) {
-                        case 'grandchild': $emoji = '🧒'; break;
-                        case 'journalist': $emoji = '🎤'; break;
-                        case 'coach': $emoji = '🏃'; break;
-                        case 'comedian': $emoji = '🎭'; break;
-                        case 'historian': $emoji = '📜'; break;
+                        case 'grandchild': $emoji = 'ðŸ§’'; break;
+                        case 'journalist': $emoji = 'ðŸŽ¤'; break;
+                        case 'coach': $emoji = 'ðŸƒ'; break;
+                        case 'comedian': $emoji = 'ðŸŽ­'; break;
+                        case 'historian': $emoji = 'ðŸ“œ'; break;
                     }
                 ?>
                     <div class="card persona-card <?php echo ($idx === 0) ? 'selected' : ''; ?>" 
@@ -136,7 +138,7 @@ require_once __DIR__ . '/../includes/header.php';
                          style="cursor: pointer; text-align: center; padding: 1.5rem; border: 2px solid var(--color-border); border-radius: var(--radius-md);">
                         <div style="font-size: 2.2rem; margin-bottom: 0.5rem;"><?php echo $emoji; ?></div>
                         <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem; color: var(--color-primary);"><?php echo htmlspecialchars($p['name']); ?></h3>
-                        <p class="text-sm" style="font-size: 0.85rem; font-style: italic;">“<?php echo htmlspecialchars(mb_substr($p['greeting'], 0, 60)); ?>...”</p>
+                        <p class="text-sm" style="font-size: 0.85rem; font-style: italic;">â€œ<?php echo htmlspecialchars(mb_substr($p['greeting'], 0, 60)); ?>...â€</p>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -145,7 +147,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Section 2: Select Topic Pills -->
         <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-primary-light);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>📝</span> Section 2: Select Topic Theme
+                <span>ðŸ“</span> Section 2: Select Topic Theme
             </h2>
 
             <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
@@ -163,14 +165,14 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Section 3: Story Length -->
         <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-amber);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>⏱️</span> Section 3: Story Length
+                <span>â±ï¸</span> Section 3: Story Length
             </h2>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
                 <label style="border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem; cursor: pointer; display: flex; gap: 0.75rem; align-items: flex-start;">
                     <input type="radio" name="duration_type" value="quick" class="form-check-input">
                     <div>
-                        <strong style="font-size: 1.05rem; display: block;">Quick (3–5 mins)</strong>
+                        <strong style="font-size: 1.05rem; display: block;">Quick (3â€“5 mins)</strong>
                         <span class="text-sm">Single concise story (4 questions).</span>
                     </div>
                 </label>
@@ -178,7 +180,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <label style="border: 2px solid var(--color-primary); background: var(--color-mint-bg); border-radius: var(--radius-md); padding: 1.25rem; cursor: pointer; display: flex; gap: 0.75rem; align-items: flex-start;">
                     <input type="radio" name="duration_type" value="standard" class="form-check-input" checked>
                     <div>
-                        <strong style="font-size: 1.05rem; display: block; color: var(--color-primary);">Standard (7–10 mins)</strong>
+                        <strong style="font-size: 1.05rem; display: block; color: var(--color-primary);">Standard (7â€“10 mins)</strong>
                         <span class="text-sm">Explores narrative & lessons (5 questions).</span>
                     </div>
                 </label>
@@ -193,10 +195,33 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         </div>
 
-        <!-- Section 4: Contributor Identity & Privacy -->
+        
+        <!-- Section 4: Language Preference -->
+        <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-primary);">
+            <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem;">
+                <span>🌐</span> Section 4: Language Preference
+            </h2>
+            <p class="text-sm" style="margin-bottom: 1rem; color: var(--color-text-muted);">Choose the language in which the AI host will ask your questions.</p>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <label style="border: 2px solid var(--color-primary); background: var(--color-mint-bg); border-radius: var(--radius-md); padding: 1rem 1.5rem; cursor: pointer; display: flex; gap: 0.6rem; align-items: center;">
+                    <input type="radio" name="language" value="en" class="form-check-input" checked>
+                    <div><strong>English</strong></div>
+                </label>
+                <label style="border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem 1.5rem; cursor: pointer; display: flex; gap: 0.6rem; align-items: center;">
+                    <input type="radio" name="language" value="hi" class="form-check-input">
+                    <div><strong>Hindi (हिन्दी)</strong></div>
+                </label>
+                <label style="border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem 1.5rem; cursor: pointer; display: flex; gap: 0.6rem; align-items: center;">
+                    <input type="radio" name="language" value="mr" class="form-check-input">
+                    <div><strong>Marathi (मराठी)</strong></div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Section 5: Contributor Identity & Privacy -->
         <div class="card" style="margin-bottom: 2.5rem; border-top: 5px solid var(--color-primary);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>👤</span> Section 4: Contributor Identity & Archive Settings
+                <span>ðŸ‘¤</span> Section 4: Contributor Identity & Archive Settings
             </h2>
 
             <?php if ($isLoggedIn): ?>
@@ -232,7 +257,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Action Button -->
         <div style="text-align: center;">
             <button type="submit" class="btn btn-primary text-lg" style="padding: 1rem 3.5rem; font-size: 1.2rem;">
-                <?php echo $isLoggedIn ? 'Begin Member Story ➔' : 'Begin Guest Story ➔'; ?>
+                <?php echo $isLoggedIn ? 'Begin Member Story âž”' : 'Begin Guest Story âž”'; ?>
             </button>
         </div>
     </form>
