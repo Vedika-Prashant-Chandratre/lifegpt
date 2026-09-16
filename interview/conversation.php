@@ -89,8 +89,8 @@ require_once __DIR__ . '/../includes/header.php';
                 <span id="questionProgress" style="font-weight: 700; color: var(--color-primary); font-size: 1.05rem;">Question 1 of 5</span>
             </div>
             
-            <button id="btnReplay" class="btn btn-outline" style="min-height: 38px; padding: 0.35rem 1rem; font-size: 0.85rem; border-radius: var(--radius-pill);" aria-label="Replay Question Voice">
-                🔊 Replay Question
+            <button id="btnReplay" class="btn btn-outline" style="min-height: 38px; padding: 0.35rem 1rem; font-size: 0.85rem; border-radius: var(--radius-pill);" aria-label="Read Question Aloud">
+                🔊 Read Question
             </button>
         </div>
         
@@ -164,6 +164,9 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <script>
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+}
 window.LifeGPTConfig = {
     appUrl: '<?php echo APP_URL; ?>',
     interviewUuid: '<?php echo $interviewUuid; ?>',
@@ -173,9 +176,9 @@ window.LifeGPTConfig = {
 };
 </script>
 
-<script src="<?php echo APP_URL; ?>/assets/js/speech-recognition.js"></script>
-<script src="<?php echo APP_URL; ?>/assets/js/speech-synthesis.js"></script>
-<script src="<?php echo APP_URL; ?>/assets/js/interview.js"></script>
+<script src="<?php echo APP_URL; ?>/assets/js/speech-recognition.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/speech-recognition.js'); ?>"></script>
+<script src="<?php echo APP_URL; ?>/assets/js/speech-synthesis.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/speech-synthesis.js'); ?>"></script>
+<script src="<?php echo APP_URL; ?>/assets/js/interview.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/interview.js'); ?>"></script>
 
 <?php
 require_once __DIR__ . '/../includes/footer.php';

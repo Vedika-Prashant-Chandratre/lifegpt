@@ -167,7 +167,7 @@ require_once __DIR__ . '/../includes/header.php';
             </h2>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-                <label style="border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem; cursor: pointer; display: flex; gap: 0.75rem; align-items: flex-start;">
+                <label class="duration-card">
                     <input type="radio" name="duration_type" value="quick" class="form-check-input">
                     <div>
                         <strong style="font-size: 1.05rem; display: block;">Quick (3–5 mins)</strong>
@@ -175,15 +175,15 @@ require_once __DIR__ . '/../includes/header.php';
                     </div>
                 </label>
 
-                <label style="border: 2px solid var(--color-primary); background: var(--color-mint-bg); border-radius: var(--radius-md); padding: 1.25rem; cursor: pointer; display: flex; gap: 0.75rem; align-items: flex-start;">
+                <label class="duration-card">
                     <input type="radio" name="duration_type" value="standard" class="form-check-input" checked>
                     <div>
-                        <strong style="font-size: 1.05rem; display: block; color: var(--color-primary);">Standard (7–10 mins)</strong>
+                        <strong style="font-size: 1.05rem; display: block;">Standard (7–10 mins)</strong>
                         <span class="text-sm">Explores narrative & lessons (5 questions).</span>
                     </div>
                 </label>
 
-                <label style="border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem; cursor: pointer; display: flex; gap: 0.75rem; align-items: flex-start;">
+                <label class="duration-card">
                     <input type="radio" name="duration_type" value="deep" class="form-check-input">
                     <div>
                         <strong style="font-size: 1.05rem; display: block;">Deep Dive (~15 mins)</strong>
@@ -258,6 +258,31 @@ function selectTopicPill(btn) {
     btn.classList.add('btn-primary');
     document.getElementById('topicIdInput').value = btn.getAttribute('data-id');
 }
+
+function updateDurationCards() {
+    document.querySelectorAll('.duration-card').forEach(card => {
+        const radio = card.querySelector('input[name="duration_type"]');
+        const strong = card.querySelector('strong');
+        if (radio && radio.checked) {
+            card.classList.add('selected');
+            card.style.borderColor = 'var(--color-primary)';
+            card.style.backgroundColor = 'var(--color-mint-bg)';
+            if (strong) strong.style.color = 'var(--color-primary)';
+        } else {
+            card.classList.remove('selected');
+            card.style.borderColor = 'var(--color-border)';
+            card.style.backgroundColor = '#FFFFFF';
+            if (strong) strong.style.color = '';
+        }
+    });
+}
+
+document.querySelectorAll('input[name="duration_type"]').forEach(radio => {
+    radio.addEventListener('change', updateDurationCards);
+});
+
+// Run immediately to sync initial highlight with checked option
+updateDurationCards();
 </script>
 
 <?php

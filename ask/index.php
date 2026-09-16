@@ -185,7 +185,7 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             </div>
             
-            <span class="step-badge" style="background: var(--color-mint-bg); color: var(--color-primary); margin: 0;">RAG ENGINE ACTIVE</span>
+            <span class="step-badge" style="background: var(--color-mint-bg); color: var(--color-primary); margin: 0;">Searching Contributed Stories</span>
         </div>
 
         <!-- Chat Messages Container -->
@@ -261,14 +261,17 @@ require_once __DIR__ . '/../includes/header.php';
 
         <!-- Sticky Floating Search Bar Input -->
         <div class="ask-input-container">
-            <form action="" method="POST" id="askForm" style="display: flex; gap: 0.75rem; align-items: center;">
+            <form action="" method="POST" id="askForm" class="ask-form">
                 <?php echo CSRF::getInput(); ?>
-                <button type="button" class="btn btn-outline" title="Voice Search" style="min-height: 48px; width: 48px; border-radius: 50%; padding: 0;">
-                    🎙️
-                </button>
-                <input type="text" name="query" id="askQueryInput" class="form-control" placeholder="Ask LifeGPT anything (e.g., How to navigate career change?)" required style="flex: 1; min-height: 50px; border-radius: var(--radius-pill);">
-                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.85rem;">
-                    Send ➔
+                <div class="ask-input-row">
+                    <button type="button" class="btn btn-outline ask-voice-btn" title="Voice Search" aria-label="Voice Search">
+                        🎙️
+                    </button>
+                    <input type="text" name="query" id="askQueryInput" class="form-control" placeholder="Ask LifeGPT anything (e.g., How to navigate career change?)" required>
+                </div>
+                <button type="submit" class="btn btn-primary ask-submit-btn">
+                    <span class="ask-btn-desktop">Send ➔</span>
+                    <span class="ask-btn-mobile">Ask Question ➔</span>
                 </button>
             </form>
         </div>

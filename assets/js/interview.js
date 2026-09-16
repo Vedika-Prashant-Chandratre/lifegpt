@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const isLoggedIn = config.isLoggedIn || false;
     const voiceSettings = config.voiceSettings || { rate: 1.0, pitch: 1.0, lang: 'en-US' };
 
+    // Clear any queued speech from previous loads immediately
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
+
     // DOM Elements
     const chatContainer = document.getElementById('chatContainer');
     const questionProgress = document.getElementById('questionProgress');
@@ -99,11 +104,15 @@ document.addEventListener('DOMContentLoaded', function() {
             lang: voiceSettings.lang,
             onStart: () => {
                 isSynthPlaying = true;
-                if (btnReplay) btnReplay.innerHTML = '🔊 Speaking...';
+                if (btnReplay) btnReplay.innerHTML = '⏹ Stop Speaking';
             },
             onEnd: () => {
                 isSynthPlaying = false;
-                if (btnReplay) btnReplay.innerHTML = '🔊 Replay Question';
+                if (btnReplay) btnReplay.innerHTML = '🔊 Read Question';
+            },
+            onError: () => {
+                isSynthPlaying = false;
+                if (btnReplay) btnReplay.innerHTML = '🔊 Read Question';
             }
         });
     }
@@ -184,12 +193,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 questionCount = data.question_sequence;
                 targetQuestionLimit = data.target_limit || 5;
                 
+                // Never speak automatically; ensure any prior speech is cancelled and label reset
+                if (synthPlayer) {
+                    synthPlayer.cancel();
+                }
+                isSynthPlaying = false;
+                if (btnReplay) {
+                    btnReplay.innerHTML = '🔊 Read Question';
+                }
+                
                 updateProgressUI();
                 addChatBubble(currentQuestion, 'ai');
-                
-                if (synthPlayer) {
-                    synthPlayer.speak(currentQuestion);
-                }
                 
                 answerText.value = '';
                 validateInputText();
@@ -214,6 +228,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (synthPlayer) {
             synthPlayer.cancel();
+        }
+        isSynthPlaying = false;
+        if (btnReplay) {
+            btnReplay.innerHTML = '🔊 Read Question';
+        }
+        if (speechRecognizer) {
+            speechRecognizer.stop();
         }
         
         btnSubmit.disabled = true;
@@ -316,6 +337,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnSkip) {
         btnSkip.addEventListener('click', function() {
             if (confirm('Would you like to skip this question?')) {
+                if (synthPlayer) synthPlayer.cancel();
+                if (speechRecognizer) speechRecognizer.stop();
                 saveAnswer('[Contributor chose to skip this question]', 'typing');
             }
         });
@@ -323,10 +346,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (btnReplay) {
         btnReplay.addEventListener('click', function() {
-            if (synthPlayer && currentQuestion) {
-                if (isSynthPlaying) {
-                    synthPlayer.cancel();
-                } else {
+            if (!currentQuestion) return;
+            if (isSynthPlaying) {
+                if (synthPlayer) synthPlayer.cancel();
+                isSynthPlaying = false;
+                btnReplay.innerHTML = '🔊 Read Question';
+            } else {
+                if (synthPlayer) {
                     synthPlayer.speak(currentQuestion);
                 }
             }
@@ -336,6 +362,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnPause) {
         btnPause.addEventListener('click', function() {
             if (synthPlayer) synthPlayer.cancel();
+            if (speechRecognizer) speechRecognizer.stop();
             if (confirm('Your progress is autosaved. Would you like to pause and return to your dashboard?')) {
                 window.location.href = `${appUrl}/dashboard/`;
             }
@@ -345,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnEndEarly) {
         btnEndEarly.addEventListener('click', function() {
             if (synthPlayer) synthPlayer.cancel();
+            if (speechRecognizer) speechRecognizer.stop();
             if (confirm('Would you like to finish your story now and view your summary?')) {
                 btnEndEarly.disabled = true;
                 btnEndEarly.textContent = 'Completing...';
@@ -409,6 +437,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (speechRecognizer) speechRecognizer.start();
         });
     }
+
+    // Stop active speech playback or microphone when navigating away
+    window.addEventListener('beforeunload', function() {
+        if (synthPlayer) synthPlayer.cancel();
+        if (speechRecognizer) speechRecognizer.stop();
+    });
+    window.addEventListener('pagehide', function() {
+        if (synthPlayer) synthPlayer.cancel();
+        if (speechRecognizer) speechRecognizer.stop();
+    });
 
     // Load first question
     fetchNextQuestion();

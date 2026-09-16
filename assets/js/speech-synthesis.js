@@ -25,7 +25,11 @@ class LifeGPTSpeechSynthesis {
     init() {
         if (!this.synth) {
             console.warn('Speech Synthesis is not supported by this browser.');
+            return;
         }
+        try {
+            this.synth.cancel();
+        } catch (e) {}
     }
     
     /**
@@ -89,8 +93,11 @@ class LifeGPTSpeechSynthesis {
      */
     cancel() {
         if (!this.isSupported()) return;
-        this.synth.cancel();
+        try {
+            this.synth.cancel();
+        } catch (e) {}
         this.isPlaying = false;
+        if (this.onEnd) this.onEnd();
     }
     
     /**

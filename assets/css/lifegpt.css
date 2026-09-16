@@ -689,6 +689,86 @@ textarea.form-control {
     background: #FFFFFF;
 }
 
+.ask-form {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    width: 100%;
+}
+
+.ask-input-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex: 1;
+}
+
+.ask-voice-btn {
+    min-height: 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ask-form #askQueryInput {
+    flex: 1;
+    min-height: 50px;
+    border-radius: var(--radius-pill);
+}
+
+.ask-submit-btn {
+    padding: 0.75rem 1.85rem;
+    min-height: 50px;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ask-btn-desktop {
+    display: inline;
+}
+
+.ask-btn-mobile {
+    display: none;
+}
+
+/* Story Length Duration Card Styles (Section 3) */
+.duration-card {
+    border: 2px solid var(--color-border);
+    background-color: #FFFFFF;
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    cursor: pointer;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    transition: var(--transition);
+    user-select: none;
+}
+
+.duration-card:hover {
+    border-color: var(--color-primary-light);
+}
+
+.duration-card.selected,
+.duration-card:has(input[type="radio"]:checked) {
+    border-color: var(--color-primary) !important;
+    background-color: var(--color-mint-bg) !important;
+}
+
+.duration-card.selected strong,
+.duration-card:has(input[type="radio"]:checked) strong {
+    color: var(--color-primary) !important;
+}
+
 .citation-tag {
     display: inline-flex;
     align-items: center;
@@ -875,4 +955,61 @@ textarea.form-control {
     .header-container { padding: 0.75rem 1rem; }
     .main-content { padding: 1.25rem 1rem; }
     .floating-avatar-widget { bottom: 1rem; right: 1rem; width: 52px; height: 52px; font-size: 1.5rem; }
+
+    /* Ask LifeGPT Search Bar Mobile Presentation */
+    .ask-input-container {
+        padding: 0.75rem 0.85rem;
+    }
+
+    .ask-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        width: 100%;
+    }
+
+    .ask-input-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        width: 100%;
+    }
+
+    .ask-voice-btn {
+        min-height: 48px;
+        min-width: 48px;
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+    }
+
+    .ask-form #askQueryInput {
+        width: 100%;
+        min-height: 48px;
+        font-size: 16px; /* Must be at least 16px to prevent iOS auto-zoom and ensure legibility */
+        padding: 0.7rem 1.15rem;
+        border-radius: var(--radius-pill);
+        box-sizing: border-box;
+    }
+
+    .ask-submit-btn {
+        width: 100%;
+        min-height: 48px; /* At least 44px touch target */
+        font-size: 16px;
+        font-weight: 600;
+        padding: 0.75rem 1.25rem;
+        border-radius: var(--radius-pill);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+
+    .ask-btn-desktop {
+        display: none;
+    }
+
+    .ask-btn-mobile {
+        display: inline;
+    }
 }

@@ -19,7 +19,7 @@ require_once __DIR__ . '/includes/header.php';
         </p>
         <ul style="margin-left: 2rem; margin-bottom: 1rem;">
             <li><strong>Storage Consent:</strong> Allows us to save your interview history so you can review it or resume it.</li>
-            <li><strong>RAG (Search) Consent:</strong> Allows your anonymized stories to help answer questions asked by visitors on "Ask LifeGPT".</li>
+            <li><strong>Story Search Consent:</strong> Allows your anonymized stories to help answer questions asked by visitors on "Ask LifeGPT".</li>
             <li><strong>Quotes Consent:</strong> Allows us to display your representative, approved quotes on our homepage or community feeds.</li>
             <li><strong>Research Consent:</strong> Allows verified researchers to review anonymized stories to study demographic and social trends.</li>
         </ul>
@@ -34,7 +34,7 @@ require_once __DIR__ . '/includes/header.php';
         <ul style="margin-left: 2rem; margin-bottom: 1rem;">
             <li>Registered members can withdraw consent or delete interviews directly from their dashboard.</li>
             <li>Guest users are given a secure access link upon completing their interview, allowing them to return and withdraw consent or delete the conversation later.</li>
-            <li>When consent is withdrawn, the corresponding information is instantly flagged as private and removed from all future RAG queries and public pages.</li>
+            <li>When consent is withdrawn, the corresponding information is instantly flagged as private and removed from all future search queries and public pages.</li>
         </ul>
     </div>
 

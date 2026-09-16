@@ -198,7 +198,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="card" style="background: linear-gradient(135deg, #FFFFFF 0%, var(--color-amber-light) 100%); border-left: 6px solid var(--color-amber); padding: 2.25rem;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
                 <span class="step-badge" style="background-color: var(--color-amber); color: #FFFFFF; margin-bottom: 0;">
-                    ASK LIFGPT EXAMPLE
+                    ASK LIFEGPT EXAMPLE
                 </span>
                 <span style="font-size: 1.5rem;">💬</span>
             </div>
@@ -212,7 +212,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
 
             <div style="background: rgba(255, 255, 255, 0.9); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem 1.25rem;">
-                <div style="font-size: 0.82rem; font-weight: 700; color: var(--color-amber); margin-bottom: 0.25rem;">LIFGPT RESPONDS:</div>
+                <div style="font-size: 0.82rem; font-weight: 700; color: var(--color-amber); margin-bottom: 0.25rem;">LIFEGPT RESPONDS:</div>
                 <p style="font-size: 0.95rem; line-height: 1.55; color: var(--color-text-main); margin-bottom: 0.75rem;">
                     “Contributors emphasize starting with small freelance experiments before quitting, treating decades of problem-solving as your greatest asset, and being comfortable being a beginner again.”
                 </p>
