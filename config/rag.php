@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * LifeGPT - RAG (Retrieval-Augmented Generation) Pipeline Configuration
  * Centralized settings for embedding generation, hybrid retrieval, story re-ranking,
@@ -31,7 +31,7 @@ return [
         'min_relevance_threshold' => 0.50,
         // Minimum and maximum number of distinct stories to synthesize in context
         'min_story_count' => 2,
-        'max_story_count' => 6,
+        'max_story_count' => 8,
         // Chunks shorter than this are excluded as low-signal
         'min_chunk_length' => 25,
         // Initial candidate chunk pool size before grouping and re-ranking

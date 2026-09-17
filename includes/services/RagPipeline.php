@@ -102,21 +102,25 @@ class RagPipeline {
 
         // 6. Language instruction
         $langInstruction = match($activeLang) {
-            'hi' => "CRITICAL LANGUAGE INSTRUCTION: You MUST formulate your entire response in natural, fluent Hindi (??????) in Devanagari script. Speak with warmth and empathy.",
-            'mr' => "CRITICAL LANGUAGE INSTRUCTION: You MUST formulate your entire response in natural, fluent Marathi (?????) in Devanagari script. Speak with warmth and empathy.",
-            default => "CRITICAL LANGUAGE INSTRUCTION: Answer in warm, natural, human conversation style in English."
+            'hi' => "CRITICAL LANGUAGE INSTRUCTION: You MUST formulate your entire response in natural, fluent Hindi (हिंदी) in Devanagari script. Speak with warmth, depth, and empathy.",
+            'mr' => "CRITICAL LANGUAGE INSTRUCTION: You MUST formulate your entire response in natural, fluent Marathi (मराठी) in Devanagari script. Speak with warmth, depth, and empathy.",
+            default => "CRITICAL LANGUAGE INSTRUCTION: Answer in warm, natural, human conversation style in English with depth and care."
         };
 
-        // 7. System prompt enforcing strict evidence grounding & privacy
+        // 7. System prompt enforcing depth, strict evidence grounding & privacy
         $systemPrompt = "You are Ask LifeGPT, an AI assistant trained on a growing collection of real human life experiences, advice, and wisdom.\n" .
-            "Answer the user's question in a warm, natural, human conversation style based SPECIFICALLY on the provided LifeGPT story experiences.\n" .
-            "STRICT RULES:\n" .
-            "1. Answer the user's actual question directly.\n" .
+            "Answer the user's question in a warm, natural, human conversation style based SPECIFICALLY on the provided LifeGPT story experiences.\n\n" .
+            "RESPONSE LENGTH AND DEPTH GUIDELINES:\n" .
+            "- Provide a comprehensive, in-depth, and well-developed response (typically 3 to 4 substantial paragraphs). Do NOT give a brief or superficial 1-paragraph summary.\n" .
+            "- Paragraph 1: Directly address the user's dilemma with empathy and practical framing, clarifying the core tension or challenge.\n" .
+            "- Paragraphs 2 & 3: Deeply synthesize the specific life turning points, real setbacks, and hard-won wisdom from the retrieved contributor experiences. Discuss specific decisions that worked, common mistakes or emotional pitfalls to avoid, and how contributors navigated the journey.\n" .
+            "- Paragraph 4: Conclude with thoughtful, actionable takeaways and grounded perspective for someone facing this situation today.\n\n" .
+            "STRICT INTEGRITY & PRIVACY RULES:\n" .
+            "1. Answer the user's actual question directly and thoroughly.\n" .
             "2. Use the retrieved LifeGPT stories as your primary evidence and context. Synthesize multiple stories together.\n" .
             "3. NEVER invent an experience, never fabricate a story, and never invent a quote.\n" .
             "4. NEVER mention, invent, or attribute any personal names or persona names (such as Linda, Maria, Helen, John, David, Robert, etc.). Refer to contributors anonymously (e.g., 'A contributor reflected that...', 'People who went through this shared that...').\n" .
-            "5. Clearly distinguish real life experiences from general reflections.\n" .
-            "6. Avoid using markdown formatting (like asterisks, hashtags, or bullet characters); format your answer in clean, readable paragraphs suitable for a chat bubble.\n" .
+            "5. Avoid using markdown formatting (like asterisks **, hashtags #, or bullet characters); format your answer in clean, readable paragraphs suitable for a chat bubble.\n" .
             $langInstruction . "\n" .
             $historyContext . "\n" .
             "You MUST return a JSON object with an \"answer\" key containing your complete response.";
@@ -184,8 +188,8 @@ class RagPipeline {
      */
     private static function buildLowEvidenceResponse(string $query, string $lang): string {
         return match($lang) {
-            'hi' => "???? LifeGPT ?????? ??? ?? ??????? ?????? ?? ??? ???????? ?????? ?? ??????? ???????? ???? ?? ????? ???? ????? LifeGPT ???????? ????? ?????? ???? ??? ?? ?????? ?? ??????? ?? ?????? ??, ?? ????? ?????? ??? ??? ?? ???? ?? ???????? ????? ???? ???? ????",
-            'mr' => "??? LifeGPT ???????????? ?? ??????? ????????? ??????? ?????? ????????? ????????? ?????? ?????. LifeGPT ???????? ????????? ????????? ?????? ???, ??? ?????? ???????? ????? ?? ??????? ?????? ????? ?????.",
+            'hi' => "मुझे LifeGPT अभिलेखागार में इस विशिष्ट प्रश्न के लिए पर्याप्त प्रासंगिक वास्तविक जीवन अनुभव नहीं मिले। LifeGPT वास्तविक लोगों द्वारा साझा किए गए अनुभवों पर आधारित है, और वर्तमान में इस विषय पर पर्याप्त प्रलेखित अनुभव उपलब्ध नहीं हैं।",
+            'mr' => "मला LifeGPT संग्रहामध्ये या विशिष्ट प्रश्नासाठी पुरेसे संबंधित प्रत्यक्ष जीवन अनुभव आढळले नाहीत. LifeGPT वास्तविक लोकांनी सामायिक केलेल्या अनुभवांवर आधारित आहे आणि सध्या या विषयावर पुरेसे प्रलेखित अनुभव उपलब्ध नाहीत.",
             default => "I couldn't find enough closely relevant experiences in the LifeGPT archive to give a well-grounded answer. LifeGPT is powered by real life turning points shared by contributors, and our archive does not yet have enough documented experiences addressing this specific question."
         };
     }
@@ -200,8 +204,8 @@ class RagPipeline {
         $combined = implode(' ', array_slice($lessons, 0, 2));
 
         return match($lang) {
-            'hi' => "????? ?????? ??? ???? ??? ?? ??????? ??: " . $combined,
-            'mr' => "?????? ?????????? ???????????: " . $combined,
+            'hi' => "हमारे संग्रह में दर्ज वास्तविक जीवन अनुभवों के आधार पर: " . $combined,
+            'mr' => "आमच्या संग्रहातील वास्तविक जीवन अनुभवांवर आधारित: " . $combined,
             default => "Based on the real life experiences recorded in our archive: " . $combined
         };
     }

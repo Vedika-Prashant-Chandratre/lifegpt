@@ -36,7 +36,8 @@ class OpenAIClient {
         $payload = [
             'model' => $model,
             'messages' => $messages,
-            'temperature' => 0.7
+            'temperature' => 0.7,
+            'max_tokens' => 1800
         ];
 
         // If structured output is requested, enforce JSON schema (or JSON mode for Groq)

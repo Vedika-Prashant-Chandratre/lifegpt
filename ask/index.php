@@ -178,14 +178,14 @@ require_once __DIR__ . '/../includes/header.php';
             <?php else: ?>
                 <!-- Clean Guest Mode Footer -->
                 <div>
-                    <span class="step-badge" style="background: var(--color-mint-bg); color: var(--color-primary); font-size: 0.8rem; margin-bottom: 0.35rem;">
+                    <span class="step-badge notranslate" translate="no" style="background: var(--color-mint-bg); color: var(--color-primary); font-size: 0.8rem; margin-bottom: 0.35rem;">
                         GUEST SEARCH MODE
                     </span>
                     <p class="text-sm" style="font-size: 0.825rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
                         No account or login required.
                     </p>
                     <a href="<?php echo APP_URL; ?>/" style="font-size: 0.85rem; color: var(--color-primary); font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
-                        â† Return to Homepage
+                        <span class="notranslate" translate="no">&larr;</span> Return to Homepage
                     </a>
                 </div>
             <?php endif; ?>
@@ -199,12 +199,12 @@ require_once __DIR__ . '/../includes/header.php';
             <div style="display: flex; align-items: center; gap: 0.6rem;">
                 <span style="font-size: 1.5rem;"><span class="notranslate" translate="no">&#129302;</span></span>
                 <div>
-                    <h2 style="font-size: 1.25rem; margin-bottom: 0;">Ask LifeGPT Search</h2>
+                    <h2 style="font-size: 1.25rem; margin-bottom: 0;">Ask <span class="notranslate" translate="no">LifeGPT</span> Search</h2>
                     <span class="text-sm" style="font-size: 0.85rem;">AI-assisted search across contributed stories</span>
                 </div>
             </div>
             
-            <span class="step-badge" style="background: var(--color-mint-bg); color: var(--color-primary); margin: 0;">RAG ENGINE ACTIVE</span>
+            <span class="step-badge notranslate" translate="no" style="background: var(--color-mint-bg); color: var(--color-primary); margin: 0;">RAG ENGINE ACTIVE</span>
         </div>
 
         <!-- Chat Messages Container -->
@@ -221,16 +221,16 @@ require_once __DIR__ . '/../includes/header.php';
                     <!-- Example Q&A Showcase Card -->
                     <div style="max-width: 720px; margin: 0 auto 2rem auto; text-align: left; background: #FFFFFF; border: 1px solid var(--color-border); border-left: 4px solid var(--color-amber); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-subtle);">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span class="step-badge" style="background: var(--color-amber-light); color: var(--color-amber); font-size: 0.75rem; margin-bottom: 0;">SAMPLE SEARCH</span>
+                            <span class="step-badge notranslate" translate="no" style="background: var(--color-amber-light); color: var(--color-amber); font-size: 0.75rem; margin-bottom: 0;">SAMPLE SEARCH</span>
                             <span class="text-sm" style="font-size: 0.8rem;">Click prompt below to search</span>
                         </div>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-primary); margin-bottom: 0.35rem;">
-                            Q: &ldquo;What advice do people share about changing careers later in life?&rdquo;
+                            Q: &ldquo;What advice do people share about changing careers later in life?&rdquo; 
                         </div>
                         <p style="font-size: 0.9rem; line-height: 1.55; color: var(--color-text-main); margin-bottom: 0.5rem;">
-                            LifeGPT: &ldquo;Contributors emphasize starting with small freelance experiments before quitting, treating decades of problem-solving as your greatest asset, and being comfortable being a beginner again.&rdquo;
+                            <span class="notranslate" translate="no">LifeGPT:</span> &ldquo;Contributors emphasize starting with small freelance experiments before quitting, treating decades of problem-solving as your greatest asset, and being comfortable being a beginner again.&rdquo; 
                         </p>
-                        <div style="font-size: 0.78rem; color: var(--color-primary); font-weight: 600;">
+                        <div class="notranslate" translate="no" style="font-size: 0.78rem; color: var(--color-primary); font-weight: 600;">
                             <span class="notranslate" translate="no">&#128220;</span> AI-assisted search across contributed stories
                         </div>
                     </div>
@@ -258,17 +258,17 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php foreach ($chatHistory as $msg): ?>
                     <?php if ($msg['role'] === 'user'): ?>
                         <div class="chat-bubble chat-bubble-user" style="align-self: flex-end; max-width: 75%;">
-                            <div class="chat-bubble-meta">You &bull; <?php echo $msg['time']; ?></div>
-                            <p style="font-size: 1.05rem; line-height: 1.5;"><?php echo htmlspecialchars($msg['content']); ?></p>
+                            <div class="chat-bubble-meta">You &bull; <span class="notranslate" translate="no"><?php echo $msg['time']; ?></span></div>
+                            <p style="font-size: 1.05rem; line-height: 1.5;" class="<?php echo ($uiLang !== 'en') ? 'notranslate' : ''; ?>" translate="<?php echo ($uiLang !== 'en') ? 'no' : 'yes'; ?>"><?php echo htmlspecialchars($msg['content']); ?></p>
                         </div>
                     <?php else: ?>
                         <div class="chat-bubble chat-bubble-ai" style="align-self: flex-start; max-width: 85%;">
                             <div class="chat-bubble-meta" style="display: flex; align-items: center; gap: 0.4rem;">
-                                <span><span class="notranslate" translate="no">&#129302;</span></span> <strong>LifeGPT Host</strong> &bull; <?php echo $msg['time']; ?>
+                                <span><span class="notranslate" translate="no">&#129302;</span></span> <strong class="notranslate" translate="no">LifeGPT Host</strong> &bull; <span class="notranslate" translate="no"><?php echo $msg['time']; ?></span>
                             </div>
-                            <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem;"><?php echo nl2br(htmlspecialchars($msg['content'])); ?></p>
+                            <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem;" class="<?php echo ($uiLang !== 'en') ? 'notranslate' : ''; ?>" translate="<?php echo ($uiLang !== 'en') ? 'no' : 'yes'; ?>"><?php echo nl2br(htmlspecialchars($msg['content'])); ?></p>
                             
-                                                        <?php 
+                            <?php 
                             $groundingScore = isset($msg['grounding_score']) ? (int)$msg['grounding_score'] : (isset($msg['accuracy']) ? (int)$msg['accuracy'] : null);
                             if ($groundingScore !== null):
                                 $confLabel = $msg['confidence_label'] ?? ($groundingScore >= 80 ? 'High grounding' : ($groundingScore >= 60 ? 'Moderate grounding' : ($groundingScore >= 40 ? 'Limited grounding' : 'Insufficient grounding')));
@@ -281,13 +281,13 @@ require_once __DIR__ . '/../includes/header.php';
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
                                     <div style="display: flex; align-items: center; gap: 0.4rem;">
                                         <span class="notranslate" translate="no">&#127919;</span>
-                                        <strong style="font-size: 0.88rem; color: var(--color-primary);">LifeGPT Grounding Score:</strong>
-                                        <span style="font-size: 0.82rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 999px; background: <?php echo htmlspecialchars($confBadge); ?>; color: <?php echo htmlspecialchars($confColor); ?>;">
+                                        <strong style="font-size: 0.88rem; color: var(--color-primary);"><span class="notranslate" translate="no">LifeGPT</span> Grounding Score:</strong>
+                                        <span class="notranslate" translate="no" style="font-size: 0.82rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 999px; background: <?php echo htmlspecialchars($confBadge); ?>; color: <?php echo htmlspecialchars($confColor); ?>;">
                                             <?php echo $groundingScore; ?>% &bull; <?php echo htmlspecialchars($confLabel); ?>
                                         </span>
                                     </div>
                                     <span style="font-size: 0.8rem; color: var(--color-text-muted);">
-                                        <?php echo ($srcCount > 0) ? 'Based on ' . $srcCount . ' relevant LifeGPT ' . ($srcCount === 1 ? 'experience' : 'experiences') : 'Limited archive match'; ?>
+                                        <?php echo ($srcCount > 0) ? 'Based on <span class="notranslate" translate="no">' . $srcCount . '</span> relevant LifeGPT ' . ($srcCount === 1 ? 'experience' : 'experiences') : 'Limited archive match'; ?>
                                     </span>
                                 </div>
 
@@ -304,13 +304,13 @@ require_once __DIR__ . '/../includes/header.php';
                                 <?php if (!empty($msg['sources'])): ?>
                                 <details style="margin-top: 0.65rem; border-top: 1px dashed var(--color-border); padding-top: 0.45rem;">
                                     <summary style="font-size: 0.8rem; font-weight: 600; color: var(--color-primary); cursor: pointer; user-select: none;">
-                                        View supporting experiences (<?php echo count($msg['sources']); ?>) &darr;
+                                        View supporting experiences (<span class="notranslate" translate="no"><?php echo count($msg['sources']); ?></span>) &darr;
                                     </summary>
                                     <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;">
                                         <?php foreach ($msg['sources'] as $src): ?>
                                             <div style="font-size: 0.78rem; background: #ffffff; border: 1px solid var(--color-border); border-left: 3px solid var(--color-primary); border-radius: 4px; padding: 0.4rem 0.6rem;">
                                                 <div style="display: flex; justify-content: space-between; font-weight: 600; color: var(--color-primary); margin-bottom: 0.2rem;">
-                                                    <span>Experience #<?php echo $src['experience_num'] ?? '1'; ?> &mdash; <?php echo htmlspecialchars($src['topic'] ?? 'Life Experience'); ?></span>
+                                                    <span>Experience #<span class="notranslate" translate="no"><?php echo $src['experience_num'] ?? '1'; ?></span> &mdash; <?php echo htmlspecialchars($src['topic'] ?? 'Life Experience'); ?></span>
                                                     <span style="color: var(--color-text-muted); font-weight: 400;"><?php echo htmlspecialchars($src['author'] ?? 'Anonymous Contributor'); ?></span>
                                                 </div>
                                                 <div style="color: var(--color-text-main); font-style: italic; line-height: 1.4;">
@@ -324,7 +324,7 @@ require_once __DIR__ . '/../includes/header.php';
                             </div>
                             <?php endif; ?>
 
-                            <div class="citation-tag">
+                            <div class="citation-tag notranslate" translate="no">
                                 <span class="notranslate" translate="no">&#128220;</span> AI-assisted search across contributed stories
                             </div>
 
@@ -339,11 +339,11 @@ require_once __DIR__ . '/../includes/header.php';
             <form action="" method="POST" id="askForm" style="display: flex; gap: 0.75rem; align-items: center;">
                 <?php echo CSRF::getInput(); ?>
                 <button type="button" class="btn btn-outline" title="Voice Search" style="min-height: 48px; width: 48px; border-radius: 50%; padding: 0;">
-                    <span class="notranslate" translate="no">&#127897;&#65039;</span>
+                    <span class="notranslate" translate="no">&#127897;&#65039;</span> 
                 </button>
                 <input type="text" name="query" id="askQueryInput" class="form-control" placeholder="Ask LifeGPT anything (e.g., How to navigate career change?)" required style="flex: 1; min-height: 50px; border-radius: var(--radius-pill);">
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.85rem;">
-                    Send &rarr;
+                    Send <span class="notranslate" translate="no">&rarr;</span>
                 </button>
             </form>
         </div>

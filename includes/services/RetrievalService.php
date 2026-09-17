@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * LifeGPT - Retrieval Service
  * Implements hybrid semantic + keyword retrieval, query intent expansion,
@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../openai.php';
 require_once __DIR__ . '/EmbeddingService.php';
 
 class RetrievalService {
@@ -35,12 +36,31 @@ class RetrievalService {
     public static function retrieve(string $userQuery): array {
         $cfg = self::getConfig();
         $hybridWeights = $cfg['hybrid_weights'] ?? ['semantic' => 0.70, 'keyword' => 0.20, 'theme' => 0.10];
-        $thresholds = $cfg['thresholds'] ?? ['min_relevance_threshold' => 0.45, 'min_story_count' => 2, 'max_story_count' => 6];
+        $thresholds = $cfg['thresholds'] ?? ['min_relevance_threshold' => 0.45, 'min_story_count' => 2, 'max_story_count' => 8];
 
         // 1. Clean & normalize query
         $cleanQuery = trim($userQuery);
         if (empty($cleanQuery)) {
             return self::emptyResult('insufficient_evidence', 'Empty query');
+        }
+
+        // 1b. If query contains Devanagari script (Hindi/Marathi), translate for English archive retrieval
+        if (preg_match('/[\x{0900}-\x{097F}]/u', $cleanQuery)) {
+            try {
+                $transRes = OpenAIClient::chatCompletion([
+                    ['role' => 'system', 'content' => 'Translate this Hindi or Marathi question into a concise English search query for life advice retrieval. Return JSON: {"english_query": "..."}'],
+                    ['role' => 'user', 'content' => $cleanQuery]
+                ], [
+                    'type' => 'object',
+                    'properties' => ['english_query' => ['type' => 'string']],
+                    'required' => ['english_query']
+                ]);
+                if (!empty($transRes['english_query'])) {
+                    $cleanQuery = trim($transRes['english_query']);
+                }
+            } catch (Exception $e) {
+                // Continue with original query if offline
+            }
         }
 
         // 2. Query expansion & intent detection

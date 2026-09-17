@@ -11,15 +11,15 @@ require_once __DIR__ . '/config.php';
         <div class="footer-container">
             <div class="footer-section" style="max-width: 400px;">
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-                    <span class="logo-icon-badge" style="width: 28px; height: 28px; font-size: 0.9rem;">🌱</span>
-                    <strong style="font-family: var(--font-heading); font-size: 1.4rem; color: var(--color-primary);">LifeGPT</strong>
+                    <span class="logo-icon-badge notranslate" translate="no" style="width: 28px; height: 28px; font-size: 0.9rem;">&#127793;</span>
+                    <strong class="notranslate" translate="no" style="font-family: var(--font-heading); font-size: 1.4rem; color: var(--color-primary);">LifeGPT</strong>
                 </div>
                 <p style="color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 0.75rem;">
-                    “Your life has answers someone else needs.”
+                    &ldquo;Your life has answers someone else needs.&rdquo;
                 </p>
                 <p style="color: var(--color-text-muted); font-size: 0.85rem;">
                     Powered by people. Organized by AI.<br>
-                    A FiftyIsNifty research and experimentation initiative.
+                    <span class="notranslate" translate="no">A FiftyIsNifty research and experimentation initiative.</span>
                 </p>
             </div>
             
@@ -43,8 +43,8 @@ require_once __DIR__ . '/config.php';
         </div>
         
         <div class="footer-bottom">
-            <p>&copy; <?php echo date('Y'); ?> LifeGPT — Collective Wisdom Archive. All rights reserved.</p>
-            <p style="font-size: 0.85rem; color: var(--color-text-muted);">LifeGPT is an experimental research platform. Respecting comfort & privacy.</p>
+            <p>&copy; <?php echo date('Y'); ?> <span class="notranslate" translate="no">LifeGPT</span> &mdash; Collective Wisdom Archive. All rights reserved.</p>
+            <p style="font-size: 0.85rem; color: var(--color-text-muted);"><span class="notranslate" translate="no">LifeGPT</span> is an experimental research platform. Respecting comfort & privacy.</p>
         </div>
     </footer>
     <?php endif; ?>
