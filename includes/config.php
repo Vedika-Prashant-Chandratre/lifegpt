@@ -1,4 +1,7 @@
 <?php
+ini_set('default_charset', 'UTF-8');
+mb_internal_encoding('UTF-8');
+
 /**
  * LifeGPT - Configuration Loader
  * Loads .env variables, establishes session security guidelines, and sets error reporting.

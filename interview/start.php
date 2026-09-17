@@ -118,27 +118,27 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Section 1: Choose Persona -->
         <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-primary);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>ðŸŽ­</span> Section 1: Choose Your AI Host Persona
+                <span class="notranslate" translate="no">&#127917;</span> Section 1: Choose Your AI Host Persona
             </h2>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
                 <?php foreach ($personas as $idx => $p): 
-                    $emoji = 'ðŸ§’';
+                    $emoji = '&#129489;';
                     switch($p['persona_key']) {
-                        case 'grandchild': $emoji = 'ðŸ§’'; break;
-                        case 'journalist': $emoji = 'ðŸŽ¤'; break;
-                        case 'coach': $emoji = 'ðŸƒ'; break;
-                        case 'comedian': $emoji = 'ðŸŽ­'; break;
-                        case 'historian': $emoji = 'ðŸ“œ'; break;
+                        case 'grandchild': $emoji = '&#129489;'; break; // Curious Grandchild
+                        case 'journalist': $emoji = '&#127908;'; break; // Journalist
+                        case 'coach':      $emoji = '&#127939;'; break; // Life Coach
+                        case 'comedian':   $emoji = '&#127917;'; break; // Comedian
+                        case 'historian':  $emoji = '&#128220;'; break; // Historian
                     }
                 ?>
                     <div class="card persona-card <?php echo ($idx === 0) ? 'selected' : ''; ?>" 
                          data-id="<?php echo $p['persona_id']; ?>" 
                          onclick="selectPersona(this)" 
                          style="cursor: pointer; text-align: center; padding: 1.5rem; border: 2px solid var(--color-border); border-radius: var(--radius-md);">
-                        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;"><?php echo $emoji; ?></div>
+                        <div class="notranslate" translate="no" style="font-size: 2.2rem; margin-bottom: 0.5rem;"><?php echo $emoji; ?></div>
                         <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem; color: var(--color-primary);"><?php echo htmlspecialchars($p['name']); ?></h3>
-                        <p class="text-sm" style="font-size: 0.85rem; font-style: italic;">â€œ<?php echo htmlspecialchars(mb_substr($p['greeting'], 0, 60)); ?>...â€</p>
+                        <p class="text-sm" style="font-size: 0.85rem; font-style: italic;">&ldquo;<?php echo htmlspecialchars(mb_substr($p['greeting'], 0, 60)); ?>...&rdquo;</p>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -147,7 +147,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Section 2: Select Topic Pills -->
         <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-primary-light);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>ðŸ“</span> Section 2: Select Topic Theme
+                <span class="notranslate" translate="no">&#128205;</span> Section 2: Select Topic Theme
             </h2>
 
             <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
@@ -172,7 +172,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <label style="border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1.25rem; cursor: pointer; display: flex; gap: 0.75rem; align-items: flex-start;">
                     <input type="radio" name="duration_type" value="quick" class="form-check-input">
                     <div>
-                        <strong style="font-size: 1.05rem; display: block;">Quick (3â€“5 mins)</strong>
+                        <strong style="font-size: 1.05rem; display: block;">Quick (3&ndash;5 mins)</strong>
                         <span class="text-sm">Single concise story (4 questions).</span>
                     </div>
                 </label>
@@ -180,7 +180,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <label style="border: 2px solid var(--color-primary); background: var(--color-mint-bg); border-radius: var(--radius-md); padding: 1.25rem; cursor: pointer; display: flex; gap: 0.75rem; align-items: flex-start;">
                     <input type="radio" name="duration_type" value="standard" class="form-check-input" checked>
                     <div>
-                        <strong style="font-size: 1.05rem; display: block; color: var(--color-primary);">Standard (7â€“10 mins)</strong>
+                        <strong style="font-size: 1.05rem; display: block; color: var(--color-primary);">Standard (7&ndash;10 mins)</strong>
                         <span class="text-sm">Explores narrative & lessons (5 questions).</span>
                     </div>
                 </label>
@@ -199,7 +199,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Section 4: Language Preference -->
         <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-primary);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem;">
-                <span>🌐</span> Section 4: Language Preference
+                <span class="notranslate" translate="no">&#127760;</span> Section 4: Language Preference
             </h2>
             <p class="text-sm" style="margin-bottom: 1rem; color: var(--color-text-muted);">Choose the language in which the AI host will ask your questions.</p>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
@@ -221,7 +221,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Section 5: Contributor Identity & Privacy -->
         <div class="card" style="margin-bottom: 2.5rem; border-top: 5px solid var(--color-primary);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>ðŸ‘¤</span> Section 4: Contributor Identity & Archive Settings
+                <span class="notranslate" translate="no">&#128100;</span> Section 5: Contributor Identity & Archive Settings
             </h2>
 
             <?php if ($isLoggedIn): ?>
@@ -257,7 +257,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Action Button -->
         <div style="text-align: center;">
             <button type="submit" class="btn btn-primary text-lg" style="padding: 1rem 3.5rem; font-size: 1.2rem;">
-                <?php echo $isLoggedIn ? 'Begin Member Story âž”' : 'Begin Guest Story âž”'; ?>
+                <?php echo $isLoggedIn ? 'Begin Member Story &rarr;' : 'Begin Guest Story &rarr;'; ?>
             </button>
         </div>
     </form>

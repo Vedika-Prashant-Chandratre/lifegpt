@@ -8,6 +8,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/openai.php';
 require_once __DIR__ . '/../includes/i18n.php';
+require_once __DIR__ . '/../includes/services/RagPipeline.php';
 
 /**
  * Strip common markdown formatting so AI answers display as clean plain text.
@@ -45,126 +46,29 @@ $sources = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
     CSRF::validateRequest();
-    
-    // Query lg_knowledge_chunks & lg_interview_summaries for relevant wisdom
-    $chunks = DB::fetchAll(
-        "SELECT kc.*, i.uuid AS interview_uuid, c.attribution_type, c.attribution_value 
-         FROM lg_knowledge_chunks kc
-         JOIN lg_interviews i ON kc.interview_id = i.interview_id
-         LEFT JOIN lg_consents c ON i.interview_id = c.interview_id
-         WHERE (kc.approved_for_rag = 1 OR kc.status = 'approved') 
-         AND (kc.anonymized_text LIKE :query_anon OR kc.text LIKE :query_orig)
-         LIMIT 5",
-        [
-            'query_anon' => '%' . $userQuery . '%',
-            'query_orig' => '%' . $userQuery . '%',
-        ]
-    );
 
-    if (empty($chunks)) {
-        $chunks = DB::fetchAll(
-            "SELECT kc.*, i.uuid AS interview_uuid, c.attribution_type, c.attribution_value 
-             FROM lg_knowledge_chunks kc
-             JOIN lg_interviews i ON kc.interview_id = i.interview_id
-             LEFT JOIN lg_consents c ON i.interview_id = c.interview_id
-             WHERE kc.approved_for_rag = 1 OR kc.status = 'approved'
-             LIMIT 3"
-        );
-    }
+    $result = RagPipeline::ask($userQuery, $chatHistory);
 
-    $contextText = "";
-    foreach ($chunks as $index => $c) {
-        $contextText .= "[" . ($index + 1) . "] Real Experience Insight: " . $c['anonymized_text'] . "\n";
-        $sources[] = [
-            'author' => 'Anonymous Contributor',
-            'text' => mb_substr($c['anonymized_text'], 0, 140) . '...'
-        ];
-    }
+    $chatHistory[] = [
+        'role'    => 'user',
+        'content' => $userQuery,
+        'time'    => date('g:i A')
+    ];
 
-    try {
-        if (!empty($contextText)) {
-            // Build conversation history summary to prevent repeated answers
-            $historyContext = '';
-            if (!empty($chatHistory)) {
-                $prevPairs = array_filter($chatHistory, fn($m) => $m['role'] === 'assistant');
-                if (!empty($prevPairs)) {
-                    $historyContext = "\n\nPrevious answers you already gave in this session (DO NOT repeat the same points or phrases):\n";
-                    foreach (array_values($prevPairs) as $i => $prev) {
-                        $historyContext .= ($i + 1) . ". " . mb_substr($prev['content'], 0, 200) . "...\n";
-                    }
-                }
-            }
+    $chatHistory[] = [
+        'role'             => 'assistant',
+        'content'          => $result['answer'],
+        'grounding_score'  => $result['grounding_score'],
+        'confidence_label' => $result['confidence_label'],
+        'confidence_color' => $result['confidence_color'],
+        'confidence_badge' => $result['confidence_badge'],
+        'sources_count'    => $result['sources_count'],
+        'sources'          => $result['sources'],
+        'retrieval_status' => $result['retrieval_status'],
+        'disclaimer'       => $result['disclaimer'],
+        'time'             => date('g:i A')
+    ];
 
-                        // Determine language for AI response based on current UI language preference
-            $activeLang = $_SESSION['ui_lang'] ?? $_COOKIE['ui_lang'] ?? 'en';
-            $langInstruction = match($activeLang) {
-                'hi' => "CRITICAL LANGUAGE INSTRUCTION: You MUST formulate your entire answer in Hindi (हिन्दी) in Devanagari script. Ensure the response is warm, natural, respectful, and fluent conversational Hindi.",
-                'mr' => "CRITICAL LANGUAGE INSTRUCTION: You MUST formulate your entire answer in Marathi (मराठी) in Devanagari script. Ensure the response is warm, natural, respectful, and fluent conversational Marathi.",
-                default => "CRITICAL LANGUAGE INSTRUCTION: Answer in warm, fluent, conversational English."
-            };
-
-            $systemPrompt = "You are Ask LifeGPT, an AI assistant trained on a growing collection of real human life experiences, advice, and wisdom.\n" .
-                "Answer the user's question in a warm, natural, human conversation style based SPECIFICALLY on the provided context chunks — stay closely relevant to the question asked.\n" .
-                "Do not give generic advice unrelated to what is in the context.\n" .
-                "CRITICAL PRIVACY RULE: NEVER mention, cite, or invent any person's name or persona name in your response (such as Linda, Maria, Helen, John, David, Robert, or any other name). Do not write 'Linda shared', 'According to Linda', or start with a name prefix like 'Linda: '. Present the insights as collective human wisdom, using phrases like 'A contributor shared...', 'People who have navigated this suggest...', 'One common reflection is...', or speak directly in an empathetic conversational tone.\n" .
-                "Avoid using markdown formatting (like asterisks, hashtags, or bullet characters) in the response text; format it as clean, readable paragraphs suitable for a chat bubble.\n" .
-                "Each answer must bring NEW insights not already mentioned.\n" .
-                $langInstruction . "\n" .
-                $historyContext . "\n" .
-                "You MUST return a JSON object containing an \"answer\" key with your response text.";
-
-            $messages = [
-                ['role' => 'system', 'content' => $systemPrompt],
-                ['role' => 'user', 'content' => "Context Wisdom:\n" . $contextText . "\n\nUser Question: " . $userQuery]
-            ];
-            
-            $openAiResult = OpenAIClient::chatCompletion($messages);
-            if (!empty($openAiResult['answer'])) {
-                $rawAns = stripMarkdown($openAiResult['answer']);
-                // Strict privacy sanitization: eliminate any persona names such as Linda
-                $rawAns = preg_replace('/^(?:Linda|Maria|Helen|John|David|Robert|Contributor)\s*:\s*/iu', '', $rawAns);
-                $rawAns = preg_replace('/\b(?:Linda|Maria|Helen|John|David|Robert)\b/iu', 'a contributor', $rawAns);
-                $aiResponse = $rawAns;
-            } else {
-                $aiResponse = stripMarkdown("Based on our collective wisdom archive: " . mb_substr($contextText, 0, 280) . "... Always focus on what you can control, stay curious, and cherish your relationships.");
-            }
-        } else {
-            $aiResponse = "Our contributors share that every life challenge offers a valuable lesson. When facing uncertainty, focusing on core values, patience, and clear communication helps you navigate tough decisions.";
-        }
-    } catch (Exception $e) {
-        $aiResponse = "Based on real life stories in our archive: When navigating life's turning points, contributors frequently advise taking time to reflect, seeking perspective from those who came before, and trusting your resilience.";
-    }
-
-    // --- Accuracy Score Calculation ---
-    // Score is based on how many relevant chunks were found and whether
-    // a keyword match was found (vs. falling back to generic results)
-    $keywordMatchCount = count(DB::fetchAll(
-        "SELECT chunk_id FROM lg_knowledge_chunks
-         WHERE (approved_for_rag = 1 OR status = 'approved')
-         AND (anonymized_text LIKE :q1 OR text LIKE :q2) LIMIT 5",
-        ['q1' => '%' . $userQuery . '%', 'q2' => '%' . $userQuery . '%']
-    ));
-    $totalApproved = (int)(DB::fetch(
-        "SELECT COUNT(*) as cnt FROM lg_knowledge_chunks WHERE approved_for_rag = 1 OR status = 'approved'"
-    )['cnt'] ?? 0);
-
-    if ($totalApproved === 0) {
-        $accuracyScore = 0;
-    } elseif ($keywordMatchCount >= 5) {
-        $accuracyScore = 95;
-    } elseif ($keywordMatchCount >= 3) {
-        $accuracyScore = 80;
-    } elseif ($keywordMatchCount >= 1) {
-        $accuracyScore = 60 + ($keywordMatchCount * 8);
-    } else {
-        // Fell back to generic chunks â€” lower confidence
-        $accuracyScore = min(35, max(10, intval(($totalApproved / 10) * 3)));
-    }
-    // Clamp to 100
-    $accuracyScore = min(100, $accuracyScore);
-
-    $chatHistory[] = ['role' => 'user', 'content' => $userQuery, 'time' => date('g:i A')];
-    $chatHistory[] = ['role' => 'assistant', 'content' => $aiResponse, 'sources' => $sources, 'accuracy' => $accuracyScore, 'time' => date('g:i A')];
     $_SESSION['ask_history'] = $chatHistory;
 }
 
@@ -174,7 +78,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'new_chat') {
     exit;
 }
 
-$pageTitle = "Ask LifeGPT â€” Collective Wisdom Search";
+$pageTitle = "Ask LifeGPT &mdash; Collective Wisdom Search";
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -186,14 +90,14 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Sidebar Header -->
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
                 <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <span style="font-size: 1.6rem;">ðŸŒ±</span>
+                    <span style="font-size: 1.6rem;"><span class="notranslate" translate="no">&#127793;</span></span>
                     <strong style="font-size: 1.25rem; color: var(--color-primary);">Ask LifeGPT</strong>
                 </div>
             </div>
 
             <?php if ($isLoggedIn): ?>
                 <a href="<?php echo APP_URL; ?>/ask/?action=new_chat" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem;">
-                    <span>âž•</span> New Chat
+                    <span class="notranslate" translate="no">&#10133;</span> New Chat
                 </a>
             <?php endif; ?>
 
@@ -255,7 +159,7 @@ require_once __DIR__ . '/../includes/header.php';
             <?php if ($isLoggedIn): ?>
                 <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
                     <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--color-primary); font-weight: bold;">
-                        ðŸ‘¤
+                        <span class="notranslate" translate="no">&#128100;</span>
                     </div>
                     <div>
                         <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">
@@ -268,7 +172,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <a href="<?php echo APP_URL; ?>/account/profile.php" style="font-size: 0.85rem; color: var(--color-text-muted);">Settings</a>
                     <a href="<?php echo APP_URL; ?>/account/logout.php" class="btn btn-outline" style="min-height: 34px; padding: 0.25rem 0.75rem; font-size: 0.85rem;">
-                        ðŸšª Log Out
+                        <span class="notranslate" translate="no">&#128682;</span> Log Out
                     </a>
                 </div>
             <?php else: ?>
@@ -293,7 +197,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Chat Header -->
         <div class="ask-chat-header">
             <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <span style="font-size: 1.5rem;">ðŸ¤–</span>
+                <span style="font-size: 1.5rem;"><span class="notranslate" translate="no">&#129302;</span></span>
                 <div>
                     <h2 style="font-size: 1.25rem; margin-bottom: 0;">Ask LifeGPT Search</h2>
                     <span class="text-sm" style="font-size: 0.85rem;">AI-assisted search across contributed stories</span>
@@ -308,7 +212,7 @@ require_once __DIR__ . '/../includes/header.php';
             <?php if (empty($chatHistory)): ?>
                 <!-- Empty State -->
                 <div style="text-align: center; margin: auto 0; padding: 2rem;">
-                    <div style="width: 72px; height: 72px; background: var(--color-mint-bg); border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 2.4rem; margin-bottom: 1.25rem;">ðŸ¤–</div>
+                    <div style="width: 72px; height: 72px; background: var(--color-mint-bg); border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 2.4rem; margin-bottom: 1.25rem;"><span class="notranslate" translate="no">&#129302;</span></div>
                     <h2 style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--color-primary);">Ready when you are.</h2>
                     <p class="text-sm" style="max-width: 520px; margin: 0 auto 1.75rem auto; font-size: 1.05rem;">
                         Ask any question to search real life stories, lessons, and practical insights shared by contributors.
@@ -321,31 +225,31 @@ require_once __DIR__ . '/../includes/header.php';
                             <span class="text-sm" style="font-size: 0.8rem;">Click prompt below to search</span>
                         </div>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-primary); margin-bottom: 0.35rem;">
-                            Q: â€œWhat advice do people share about changing careers later in life?â€
+                            Q: &ldquo;What advice do people share about changing careers later in life?&rdquo;
                         </div>
                         <p style="font-size: 0.9rem; line-height: 1.55; color: var(--color-text-main); margin-bottom: 0.5rem;">
-                            LifeGPT: â€œContributors emphasize starting with small freelance experiments before quitting, treating decades of problem-solving as your greatest asset, and being comfortable being a beginner again.â€
+                            LifeGPT: &ldquo;Contributors emphasize starting with small freelance experiments before quitting, treating decades of problem-solving as your greatest asset, and being comfortable being a beginner again.&rdquo;
                         </p>
                         <div style="font-size: 0.78rem; color: var(--color-primary); font-weight: 600;">
-                            ðŸ“œ AI-assisted search across contributed stories
+                            <span class="notranslate" translate="no">&#128220;</span> AI-assisted search across contributed stories
                         </div>
                     </div>
 
                     <!-- 3 Prompt Suggestion Cards -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; max-width: 780px; margin: 0 auto;">
                         <div class="card card-hover" onclick="askQuestion('What is the best career advice older adults share?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
-                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">ðŸ’¡ Career Guidance</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">â€œWhat is the best career advice older adults share?â€</p>
+                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#128161;</span> Career Guidance</strong>
+                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;What is the best career advice older adults share?&rdquo;</p>
                         </div>
 
                         <div class="card card-hover" onclick="askQuestion('How do people handle major life turning points?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
-                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">ðŸŒ¿ Turning Points</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">â€œHow do people handle major life turning points?â€</p>
+                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#127807;</span> Turning Points</strong>
+                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;How do people handle major life turning points?&rdquo;</p>
                         </div>
 
                         <div class="card card-hover" onclick="askQuestion('What funny mishaps do people laugh about later?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
-                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">ðŸŽ­ Humor & Perspective</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">â€œWhat funny mishaps do people laugh about later?â€</p>
+                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#127917;</span> Humor & Perspective</strong>
+                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;What funny mishaps do people laugh about later?&rdquo;</p>
                         </div>
                     </div>
                 </div>
@@ -360,28 +264,68 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php else: ?>
                         <div class="chat-bubble chat-bubble-ai" style="align-self: flex-start; max-width: 85%;">
                             <div class="chat-bubble-meta" style="display: flex; align-items: center; gap: 0.4rem;">
-                                <span>ðŸ¤–</span> <strong>LifeGPT Host</strong> &bull; <?php echo $msg['time']; ?>
+                                <span><span class="notranslate" translate="no">&#129302;</span></span> <strong>LifeGPT Host</strong> &bull; <?php echo $msg['time']; ?>
                             </div>
                             <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem;"><?php echo nl2br(htmlspecialchars($msg['content'])); ?></p>
                             
-                            <?php if (isset($msg['accuracy'])): 
-                                $score = (int)$msg['accuracy'];
-                                $barColor = $score >= 80 ? '#16a34a' : ($score >= 50 ? '#d97706' : '#dc2626');
-                                $label    = $score >= 80 ? 'High Relevance' : ($score >= 50 ? 'Moderate Relevance' : 'Low Relevance');
+                                                        <?php 
+                            $groundingScore = isset($msg['grounding_score']) ? (int)$msg['grounding_score'] : (isset($msg['accuracy']) ? (int)$msg['accuracy'] : null);
+                            if ($groundingScore !== null):
+                                $confLabel = $msg['confidence_label'] ?? ($groundingScore >= 80 ? 'High grounding' : ($groundingScore >= 60 ? 'Moderate grounding' : ($groundingScore >= 40 ? 'Limited grounding' : 'Insufficient grounding')));
+                                $confColor = $msg['confidence_color'] ?? ($groundingScore >= 80 ? '#16a34a' : ($groundingScore >= 60 ? '#d97706' : ($groundingScore >= 40 ? '#ea580c' : '#dc2626')));
+                                $confBadge = $msg['confidence_badge'] ?? ($groundingScore >= 80 ? '#dcfce7' : ($groundingScore >= 60 ? '#fef3c7' : ($groundingScore >= 40 ? '#ffedd5' : '#fee2e2')));
+                                $srcCount  = (int)($msg['sources_count'] ?? count($msg['sources'] ?? []));
+                                $disclaimer = $msg['disclaimer'] ?? 'This score reflects how strongly the answer is supported by relevant LifeGPT experiences. It is not a guarantee of factual correctness.';
                             ?>
-                            <div style="margin-top: 0.6rem; margin-bottom: 0.5rem;">
-                                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: 0.25rem;">
-                                    <span>ðŸŽ¯ Answer Accuracy</span>
-                                    <strong style="color: <?php echo $barColor; ?>;"><?php echo $score; ?>% â€” <?php echo $label; ?></strong>
+                            <div style="margin-top: 0.85rem; padding: 0.85rem 1rem; background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                        <span class="notranslate" translate="no">&#127919;</span>
+                                        <strong style="font-size: 0.88rem; color: var(--color-primary);">LifeGPT Grounding Score:</strong>
+                                        <span style="font-size: 0.82rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 999px; background: <?php echo htmlspecialchars($confBadge); ?>; color: <?php echo htmlspecialchars($confColor); ?>;">
+                                            <?php echo $groundingScore; ?>% &bull; <?php echo htmlspecialchars($confLabel); ?>
+                                        </span>
+                                    </div>
+                                    <span style="font-size: 0.8rem; color: var(--color-text-muted);">
+                                        <?php echo ($srcCount > 0) ? 'Based on ' . $srcCount . ' relevant LifeGPT ' . ($srcCount === 1 ? 'experience' : 'experiences') : 'Limited archive match'; ?>
+                                    </span>
                                 </div>
-                                <div style="height: 6px; background: var(--color-border); border-radius: 99px; overflow: hidden;">
-                                    <div style="height: 100%; width: <?php echo $score; ?>%; background: <?php echo $barColor; ?>; border-radius: 99px; transition: width 0.4s ease;"></div>
+
+                                <!-- Grounding Progress Bar -->
+                                <div style="height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-bottom: 0.45rem;">
+                                    <div style="height: 100%; width: <?php echo min(100, max(4, $groundingScore)); ?>%; background: <?php echo htmlspecialchars($confColor); ?>; border-radius: 99px; transition: width 0.4s ease;"></div>
                                 </div>
+
+                                <p style="font-size: 0.76rem; color: var(--color-text-muted); margin: 0; line-height: 1.4;">
+                                    <?php echo htmlspecialchars($disclaimer); ?>
+                                </p>
+
+                                <!-- Supporting Experiences Drawer -->
+                                <?php if (!empty($msg['sources'])): ?>
+                                <details style="margin-top: 0.65rem; border-top: 1px dashed var(--color-border); padding-top: 0.45rem;">
+                                    <summary style="font-size: 0.8rem; font-weight: 600; color: var(--color-primary); cursor: pointer; user-select: none;">
+                                        View supporting experiences (<?php echo count($msg['sources']); ?>) &darr;
+                                    </summary>
+                                    <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;">
+                                        <?php foreach ($msg['sources'] as $src): ?>
+                                            <div style="font-size: 0.78rem; background: #ffffff; border: 1px solid var(--color-border); border-left: 3px solid var(--color-primary); border-radius: 4px; padding: 0.4rem 0.6rem;">
+                                                <div style="display: flex; justify-content: space-between; font-weight: 600; color: var(--color-primary); margin-bottom: 0.2rem;">
+                                                    <span>Experience #<?php echo $src['experience_num'] ?? '1'; ?> &mdash; <?php echo htmlspecialchars($src['topic'] ?? 'Life Experience'); ?></span>
+                                                    <span style="color: var(--color-text-muted); font-weight: 400;"><?php echo htmlspecialchars($src['author'] ?? 'Anonymous Contributor'); ?></span>
+                                                </div>
+                                                <div style="color: var(--color-text-main); font-style: italic; line-height: 1.4;">
+                                                    &ldquo;<?php echo htmlspecialchars($src['key_insight'] ?? ($src['text'] ?? '')); ?>&rdquo;
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </details>
+                                <?php endif; ?>
                             </div>
                             <?php endif; ?>
 
                             <div class="citation-tag">
-                                ðŸ“œ AI-assisted search across contributed stories
+                                <span class="notranslate" translate="no">&#128220;</span> AI-assisted search across contributed stories
                             </div>
 
                         </div>
@@ -395,11 +339,11 @@ require_once __DIR__ . '/../includes/header.php';
             <form action="" method="POST" id="askForm" style="display: flex; gap: 0.75rem; align-items: center;">
                 <?php echo CSRF::getInput(); ?>
                 <button type="button" class="btn btn-outline" title="Voice Search" style="min-height: 48px; width: 48px; border-radius: 50%; padding: 0;">
-                    ðŸŽ™ï¸
+                    <span class="notranslate" translate="no">&#127897;&#65039;</span>
                 </button>
                 <input type="text" name="query" id="askQueryInput" class="form-control" placeholder="Ask LifeGPT anything (e.g., How to navigate career change?)" required style="flex: 1; min-height: 50px; border-radius: var(--radius-pill);">
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.85rem;">
-                    Send âž”
+                    Send &rarr;
                 </button>
             </form>
         </div>

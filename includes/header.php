@@ -111,7 +111,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
 
                 <!-- Top Right Language Switcher -->
                 <div class="lang-switcher-pill" title="Choose Language / भाषा चुनें / भाषा निवडा">
-                    <span style="font-size: 0.85rem; margin-right: 0.15rem;">🌐</span>
+                    <span class="notranslate" translate="no" style="font-size: 0.85rem; margin-right: 0.15rem;">&#127760;</span>
                     <button type="button" class="lang-btn <?php echo $uiLang === 'en' ? 'active' : ''; ?>" onclick="switchLanguage('en')">English</button>
                     <button type="button" class="lang-btn <?php echo $uiLang === 'hi' ? 'active' : ''; ?>" onclick="switchLanguage('hi')">हिन्दी</button>
                     <button type="button" class="lang-btn <?php echo $uiLang === 'mr' ? 'active' : ''; ?>" onclick="switchLanguage('mr')">मराठी</button>
@@ -134,9 +134,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
     <div id="google_translate_element" style="display:none;"></div>
 
     <!-- Bottom-Right Floating Avatar Widget -->
-    <div class="floating-avatar-widget" onclick="openHowItWorksModal()" title="How LifeGPT Works (Onboarding Guide)">
-        🤖
-    </div>
+    <div class="floating-avatar-widget notranslate" translate="no" onclick="openHowItWorksModal()" title="How LifeGPT Works (Onboarding Guide)">&#129302;</div>
 
     <!-- 4-Step Centered Onboarding Modal Overlay ("How LifeGPT Works") -->
     <div id="howItWorksModal" class="modal-overlay" aria-hidden="true">
