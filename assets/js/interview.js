@@ -56,9 +56,38 @@ document.addEventListener('DOMContentLoaded', function() {
         'motherfucker', 'cock', 'pussy', 'whore', 'slut', 'dick', 'piss'
     ];
     
+    const guestToken = config.guestToken || '';
+
     function getCsrfToken() {
         const tokenInput = document.querySelector('input[name="csrf_token"]');
-        return tokenInput ? tokenInput.value : '';
+        return tokenInput ? tokenInput.value : (config.csrfToken || '');
+    }
+
+    async function sendApiRequest(endpoint, payload = {}) {
+        const csrf = getCsrfToken();
+        const data = Object.assign({
+            interview_uuid: interviewUuid,
+            guest_token: guestToken,
+            csrf_token: csrf
+        }, payload);
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-Token': csrf,
+                'X-Guest-Token': guestToken
+            },
+            body: JSON.stringify(data)
+        });
+
+        const json = await response.json();
+        if (!response.ok && !json.error) {
+            json.error = `Server error (${response.status})`;
+        }
+        return json;
     }
 
     // --- Content Moderation Logic ---
@@ -169,17 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnSubmit.disabled = true;
         btnSubmit.textContent = 'Organizing thoughts...';
         
-        const csrfToken = getCsrfToken();
-        
-        fetch(`${appUrl}/api/interview-next-question.php`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ interview_uuid: interviewUuid })
-        })
-        .then(response => response.json())
+        sendApiRequest(`${appUrl}/api/index.php?action=next_question`)
         .then(data => {
             btnSubmit.disabled = false;
             
@@ -209,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 validateInputText();
                 
             } else {
-                alert('Error loading question: ' + data.error);
+                alert('Error loading question: ' + (data.error || 'Unknown error'));
             }
         })
         .catch(error => {
@@ -240,28 +259,17 @@ document.addEventListener('DOMContentLoaded', function() {
         btnSubmit.disabled = true;
         btnSubmit.textContent = 'Saving answer...';
         
-        const csrfToken = getCsrfToken();
-        
-        fetch(`${appUrl}/api/interview-save-answer.php`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                interview_uuid: interviewUuid,
-                answer: text,
-                input_method: method
-            })
+        sendApiRequest(`${appUrl}/api/index.php?action=save_answer`, {
+            answer: text,
+            input_method: method
         })
-        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 addChatBubble(text, 'user');
                 fetchNextQuestion();
             } else {
                 btnSubmit.disabled = false;
-                alert('Error saving answer: ' + data.error);
+                alert('Error saving answer: ' + (data.error || 'Unknown error'));
             }
         })
         .catch(error => {
@@ -377,25 +385,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 btnEndEarly.disabled = true;
                 btnEndEarly.textContent = 'Completing...';
                 
-                const csrfToken = getCsrfToken();
-                
-                fetch(`${appUrl}/api/interview-complete.php`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken
-                    },
-                    body: JSON.stringify({ interview_uuid: interviewUuid })
-                })
-                .then(res => res.json())
+                sendApiRequest(`${appUrl}/api/index.php?action=complete`)
                 .then(data => {
                     if (data.success) {
                         handleSessionCompletion();
                     } else {
                         btnEndEarly.disabled = false;
-                        btnEndEarly.textContent = 'Finish Story & View Summary';
-                        alert('Error completing story: ' + data.error);
+                        btnEndEarly.textContent = '🏁 Finish Story & View Summary';
+                        alert('Error completing story: ' + (data.error || 'Unknown error'));
                     }
+                })
+                .catch(err => {
+                    btnEndEarly.disabled = false;
+                    btnEndEarly.textContent = '🏁 Finish Story & View Summary';
+                    alert('Connection failure while completing story.');
                 });
             }
         });

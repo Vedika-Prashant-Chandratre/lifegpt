@@ -70,6 +70,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($userQuery)) {
     ];
 
     $_SESSION['ask_history'] = $chatHistory;
+
+    $isJson = (isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) ||
+              (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
+              (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+
+    if ($isJson) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success'          => true,
+            'answer'           => $result['answer'],
+            'grounding_score'  => $result['grounding_score'],
+            'confidence_label' => $result['confidence_label'],
+            'confidence_color' => $result['confidence_color'],
+            'confidence_badge' => $result['confidence_badge'],
+            'sources_count'    => $result['sources_count'],
+            'sources'          => $result['sources'],
+            'retrieval_status' => $result['retrieval_status'],
+            'disclaimer'       => $result['disclaimer'],
+            'time'             => date('g:i A')
+        ]);
+        exit;
+    }
 }
 
 if (isset($_GET['action']) && $_GET['action'] === 'new_chat') {
@@ -355,11 +377,13 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <script>
-function askQuestion(q) {
-    document.getElementById('askQueryInput').value = q;
-    document.getElementById('askForm').submit();
-}
-
+window.LifeGPTConfig = {
+    appUrl: '<?php echo APP_URL; ?>',
+    csrfToken: '<?php echo CSRF::getToken(); ?>'
+};
+</script>
+<script src="<?php echo APP_URL; ?>/assets/js/ask.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ask.js'); ?>"></script>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('askChatContainer');
     if (container) {

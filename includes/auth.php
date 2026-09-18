@@ -197,4 +197,53 @@ class Auth {
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // set bits 6-7 to 10
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
+
+    /**
+     * Validate ownership / access to an interview session for registered users and anonymous guests.
+     * Auto-rehydrates guest session when a valid token is provided.
+     */
+    public static function validateInterviewAccess(array $interview, ?string $guestToken = null): bool {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Registered user verification
+        if ($interview['user_id'] !== null) {
+            return self::isLoggedIn() && (int)$_SESSION['user_id'] === (int)$interview['user_id'];
+        }
+
+        // Anonymous guest verification: check active session match
+        $sessionActiveId = $_SESSION['active_interview_id'] ?? null;
+        if ((int)$sessionActiveId === (int)$interview['interview_id']) {
+            return true;
+        }
+
+        // Check guest token sources: parameter, headers, session, POST/GET
+        $token = $guestToken
+            ?: ($_SERVER['HTTP_X_GUEST_TOKEN'] ?? null)
+            ?: ($_SESSION['guest_return_token'] ?? null)
+            ?: ($_POST['guest_token'] ?? null)
+            ?: ($_GET['guest_token'] ?? null);
+
+        if (empty($token)) {
+            return false;
+        }
+
+        $tokenHash = hash('sha256', $token);
+        $tokenRow = DB::fetch(
+            "SELECT token_id FROM lg_guest_access_tokens 
+             WHERE interview_id = :id AND token_hash = :hash AND revocation_status = 0 AND expiry > NOW()",
+            ['id' => $interview['interview_id'], 'hash' => $tokenHash]
+        );
+
+        if ($tokenRow) {
+            // Re-hydrate session state for resilient multi-turn continuity
+            $_SESSION['active_interview_id'] = (int)$interview['interview_id'];
+            $_SESSION['active_interview_uuid'] = $interview['uuid'];
+            $_SESSION['guest_return_token'] = $token;
+            return true;
+        }
+
+        return false;
+    }
 }

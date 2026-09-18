@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * LifeGPT - CSRF Protection Manager
  *
@@ -54,11 +54,24 @@ class CSRF {
         if (isset($_POST['csrf_token'])) {
             $token = $_POST['csrf_token'];
         } else {
-            $headers = function_exists('getallheaders') ? getallheaders() : [];
-            foreach ($headers as $key => $value) {
-                if (strtolower($key) === 'x-csrf-token') {
-                    $token = $value;
-                    break;
+            $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+            if (!$token && function_exists('getallheaders')) {
+                $headers = getallheaders();
+                foreach ($headers as $key => $value) {
+                    if (strtolower($key) === 'x-csrf-token') {
+                        $token = $value;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!$token) {
+            $raw = file_get_contents('php://input');
+            if (!empty($raw)) {
+                $json = json_decode($raw, true);
+                if (is_array($json) && !empty($json['csrf_token'])) {
+                    $token = $json['csrf_token'];
                 }
             }
         }
@@ -69,29 +82,56 @@ class CSRF {
     }
 
     // -------------------------------------------------------------------------
-    // AJAX / JSON API Validation (Serverless-safe, no session needed)
+    // AJAX / JSON API Validation (Serverless-safe & Token-friendly)
     // -------------------------------------------------------------------------
 
     public static function validateAjax(): void {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
         $isJson = stripos($contentType, 'application/json') !== false;
 
-        $headers = function_exists('getallheaders') ? getallheaders() : [];
-        $requestedWith = '';
-        foreach ($headers as $key => $value) {
-            if (strtolower($key) === 'x-requested-with') {
-                $requestedWith = $value;
-                break;
+        $requestedWith = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+        if (empty($requestedWith) && function_exists('getallheaders')) {
+            $headers = getallheaders();
+            foreach ($headers as $key => $value) {
+                if (strtolower($key) === 'x-requested-with') {
+                    $requestedWith = $value;
+                    break;
+                }
             }
         }
         $isXhr = strtolower($requestedWith) === 'xmlhttprequest';
 
-        if (!$isJson || !$isXhr) {
+        // Check if a CSRF token is provided
+        $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? null;
+        if (!$token && function_exists('getallheaders')) {
+            foreach (getallheaders() as $k => $v) {
+                if (strtolower($k) === 'x-csrf-token') {
+                    $token = $v;
+                    break;
+                }
+            }
+        }
+        if (!$token) {
+            $raw = file_get_contents('php://input');
+            if (!empty($raw)) {
+                $json = json_decode($raw, true);
+                if (is_array($json) && !empty($json['csrf_token'])) {
+                    $token = $json['csrf_token'];
+                }
+            }
+        }
+
+        $tokenValid = (!empty($token) && !empty($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token));
+
+        if (!$tokenValid && !$isJson && !$isXhr) {
             http_response_code(403);
             header('Content-Type: application/json');
             echo json_encode([
                 'success' => false,
-                'error'   => 'Invalid request. Must be a JSON AJAX call.'
+                'error'   => 'Invalid request. Must be a JSON AJAX call or provide a valid CSRF token.'
             ]);
             exit;
         }

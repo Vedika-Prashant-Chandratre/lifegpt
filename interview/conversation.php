@@ -9,6 +9,18 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 
 if (!isset($_SESSION['active_interview_id']) || !isset($_SESSION['active_interview_uuid'])) {
+    $resumeUuid = $_GET['uuid'] ?? '';
+    $resumeToken = $_GET['guest_token'] ?? '';
+    if (!empty($resumeUuid)) {
+        $candidate = DB::fetch("SELECT * FROM lg_interviews WHERE uuid = :uuid", ['uuid' => $resumeUuid]);
+        if ($candidate && Auth::validateInterviewAccess($candidate, $resumeToken)) {
+            $_SESSION['active_interview_id'] = (int)$candidate['interview_id'];
+            $_SESSION['active_interview_uuid'] = $candidate['uuid'];
+        }
+    }
+}
+
+if (!isset($_SESSION['active_interview_id']) || !isset($_SESSION['active_interview_uuid'])) {
     header("Location: " . APP_URL . "/interview/start.php");
     exit;
 }
@@ -172,6 +184,8 @@ window.LifeGPTConfig = {
     interviewUuid: '<?php echo $interviewUuid; ?>',
     inputMode: '<?php echo $interview['input_mode']; ?>',
     isLoggedIn: <?php echo $isLoggedIn ? 'true' : 'false'; ?>,
+    guestToken: '<?php echo htmlspecialchars($_SESSION['guest_return_token'] ?? $_GET['guest_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>',
+    csrfToken: '<?php echo CSRF::getToken(); ?>',
     voiceSettings: <?php echo !empty($interview['voice_settings']) ? $interview['voice_settings'] : 'null'; ?>
 };
 </script>
