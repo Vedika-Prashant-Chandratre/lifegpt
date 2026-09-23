@@ -23,8 +23,12 @@ class RetrievalService {
 
     /**
      * Main retrieval method: given a user query, returns ranked, deduplicated, story-level context
-     * 
-     * @param string $userQuery
+     *
+     * @param string $userQuery     Raw or rewritten user question
+     * @param array  $contextData   Optional context from ContextService:
+     *                               - contextual_query string   (LLM-rewritten query for retrieval)
+     *                               - intent_type      string   ('FOLLOW_UP' | 'STANDALONE')
+     *                               - context_concepts string[] (keywords from prior conversation)
      * @return array{
      *    status: string,               // 'grounded' | 'insufficient_evidence'
      *    stories: array,               // Grouped and reconstructed stories
@@ -33,13 +37,41 @@ class RetrievalService {
      *    intent: array                 // Extracted intent & matched themes
      * }
      */
-    public static function retrieve(string $userQuery): array {
+    public static function retrieve(string $userQuery, array $contextData = []): array {
         $cfg = self::getConfig();
-        $hybridWeights = $cfg['hybrid_weights'] ?? ['semantic' => 0.70, 'keyword' => 0.20, 'theme' => 0.10];
+        $cfgWeights = $cfg['hybrid_weights'] ?? [
+            'semantic'          => 0.70,
+            'keyword'           => 0.20,
+            'theme'             => 0.10,
+            'context_relevance' => 0.00,
+        ];
         $thresholds = $cfg['thresholds'] ?? ['min_relevance_threshold' => 0.45, 'min_story_count' => 2, 'max_story_count' => 8];
 
+        // Determine whether context-aware or standalone weights apply
+        $isFollowUp      = ($contextData['intent_type'] ?? 'STANDALONE') === 'FOLLOW_UP';
+        $contextConcepts = $contextData['context_concepts'] ?? [];
+        $contextualQuery = $contextData['contextual_query'] ?? '';
+
+        if ($isFollowUp && !empty($contextConcepts)) {
+            $hybridWeights = [
+                'semantic'          => $cfgWeights['semantic']          ?? 0.60,
+                'keyword'           => $cfgWeights['keyword']           ?? 0.15,
+                'theme'             => $cfgWeights['theme']             ?? 0.10,
+                'context_relevance' => $cfgWeights['context_relevance'] ?? 0.15,
+            ];
+        } else {
+            // No context boost — use original 3-component weights, padded to 1.0
+            $hybridWeights = [
+                'semantic'          => 0.70,
+                'keyword'           => 0.20,
+                'theme'             => 0.10,
+                'context_relevance' => 0.00,
+            ];
+        }
+
         // 1. Clean & normalize query
-        $cleanQuery = trim($userQuery);
+        // Use contextual (rewritten) query for retrieval when available
+        $cleanQuery = !empty($contextualQuery) ? trim($contextualQuery) : trim($userQuery);
         if (empty($cleanQuery)) {
             return self::emptyResult('insufficient_evidence', 'Empty query');
         }
@@ -76,7 +108,7 @@ class RetrievalService {
             return self::emptyResult('insufficient_evidence', 'No eligible RAG chunks in archive');
         }
 
-        // 5. Compute Semantic Similarity & Keyword Scores for all candidates
+        // 5. Compute Semantic Similarity, Keyword, Theme & Context Relevance Scores
         $scoredCandidates = [];
         $queryKeywords = $intent['keywords'];
 
@@ -114,25 +146,38 @@ class RetrievalService {
                 }
             }
 
-            // D. Compute normalized hybrid score
+            // D. Context Relevance Score — measures chunk overlap with prior conversation concepts
+            $contextScore = 0.0;
+            if ($isFollowUp && !empty($contextConcepts)) {
+                $conceptMatches = 0;
+                foreach ($contextConcepts as $concept) {
+                    if (mb_strlen($concept) >= 3 && mb_stripos($chunkText, $concept) !== false) {
+                        $conceptMatches++;
+                    }
+                }
+                $contextScore = min(1.0, $conceptMatches / max(1, count($contextConcepts)));
+            }
+
+            // E. Compute normalized hybrid score (all 4 components)
             $rawHybrid = (
-                ($hybridWeights['semantic'] * $semanticScore) +
-                ($hybridWeights['keyword']  * $keywordScore) +
-                ($hybridWeights['theme']    * $themeScore)
+                ($hybridWeights['semantic']          * $semanticScore) +
+                ($hybridWeights['keyword']           * $keywordScore) +
+                ($hybridWeights['theme']             * $themeScore) +
+                ($hybridWeights['context_relevance'] * $contextScore)
             );
 
-            // If query has zero keyword overlap and zero life-theme overlap,
-            // penalize to prevent off-topic trivia (e.g. geography/recipes) from retrieving life stories
-            if ($keywordScore <= 0.0 && $themeScore <= 0.0) {
+            // Penalize if no query keyword and no theme overlap (off-topic guard)
+            if ($keywordScore <= 0.0 && $themeScore <= 0.0 && $contextScore <= 0.0) {
                 $rawHybrid *= 0.65;
             }
 
             $hybridScore = $rawHybrid;
 
-            $chunk['semantic_score'] = round($semanticScore, 4);
-            $chunk['keyword_score']  = round($keywordScore, 4);
-            $chunk['theme_score']    = round($themeScore, 4);
-            $chunk['hybrid_score']   = round($hybridScore, 4);
+            $chunk['semantic_score']  = round($semanticScore, 4);
+            $chunk['keyword_score']   = round($keywordScore, 4);
+            $chunk['theme_score']     = round($themeScore, 4);
+            $chunk['context_score']   = round($contextScore, 4);
+            $chunk['hybrid_score']    = round($hybridScore, 4);
 
             $scoredCandidates[] = $chunk;
         }
@@ -179,7 +224,8 @@ class RetrievalService {
 
         // Summary metrics
         $bestSemantic = !empty($finalChunks) ? max(array_column($finalChunks, 'semantic_score')) : 0.0;
-        $bestKeyword  = !empty($finalChunks) ? max(array_column($finalChunks, 'keyword_score')) : 0.0;
+        $bestKeyword  = !empty($finalChunks) ? max(array_column($finalChunks, 'keyword_score'))  : 0.0;
+        $bestContext  = !empty($finalChunks) ? max(array_column($finalChunks, 'context_score'))  : 0.0;
         $bestHybrid   = !empty($finalStories) ? $finalStories[0]['story_relevance'] : 0.0;
 
         return [
@@ -187,14 +233,17 @@ class RetrievalService {
             'stories' => $finalStories,
             'chunks'  => $finalChunks,
             'metrics' => [
-                'best_semantic_score' => $bestSemantic,
-                'best_keyword_score'  => $bestKeyword,
-                'best_hybrid_score'   => $bestHybrid,
-                'total_candidates'    => count($topPool),
-                'selected_stories'    => count($finalStories),
-                'threshold'           => $minThreshold,
+                'best_semantic_score'  => $bestSemantic,
+                'best_keyword_score'   => $bestKeyword,
+                'best_context_score'   => $bestContext,
+                'best_hybrid_score'    => $bestHybrid,
+                'total_candidates'     => count($topPool),
+                'selected_stories'     => count($finalStories),
+                'threshold'            => $minThreshold,
+                'context_mode'         => $isFollowUp ? 'follow_up' : 'standalone',
+                'contextual_query'     => !empty($contextualQuery) ? $contextualQuery : null,
             ],
-            'intent' => $intent,
+            'intent'  => $intent,
         ];
     }
 

@@ -18,11 +18,13 @@ return [
     ],
 
     // --- 2. Hybrid Retrieval Component Weights (must sum to 1.0) ---
-    // hybrid_score = 0.70 * semantic + 0.20 * keyword + 0.10 * theme
+    // With context enabled: 0.60 * semantic + 0.15 * keyword + 0.10 * theme + 0.15 * context_relevance
+    // Without context (first turn / standalone): semantic=0.70, keyword=0.20, theme=0.10
     'hybrid_weights' => [
-        'semantic' => 0.70,
-        'keyword'  => 0.20,
-        'theme'    => 0.10,
+        'semantic'          => 0.60,
+        'keyword'           => 0.15,
+        'theme'             => 0.10,
+        'context_relevance' => 0.15,
     ],
 
     // --- 3. Retrieval & Story Selection Thresholds ---
@@ -46,6 +48,20 @@ return [
         'story_diversity'    => 0.20,
         'claim_validation'   => 0.25,
     ],
+
+    // --- 5a. Context-Aware Conversation Settings ---
+    'context' => [
+        // Number of recent conversation turns to inject into query rewriting and RAG
+        'max_history_turns'      => 6,
+        // When message count exceeds this, summarize older turns instead of sending raw
+        'summary_threshold_turns' => 8,
+        // Enable persistent DB storage of conversations in lg_ask_conversations / lg_ask_messages
+        'persist_to_db'          => true,
+    ],
+
+    // --- 5b. Developer Debug Mode ---
+    // When true, API responses include contextual_query, intent_type, and per-component score breakdown.
+    'debug_mode' => false,
 
     // --- 5. Confidence Labels & UI Ranges ---
     'confidence_tiers' => [
