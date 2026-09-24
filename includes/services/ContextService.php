@@ -175,14 +175,17 @@ class ContextService {
         $summaryPart    = $summary ? "Conversation Summary:\n{$summary}\n\n" : '';
 
         $systemMsg = <<<EOT
-You are a query rewriting assistant for a life advice system called LifeGPT.
-Your task is to take a follow-up question that references prior conversation context and rewrite it as a fully self-contained, explicit question that can be understood without any conversation history.
+You are a search query rewriter for LifeGPT, a life advice system.
+
+Your task: take a follow-up question + conversation history, and rewrite the follow-up into a fully self-contained, explicit search query that will retrieve the RIGHT stories from the database.
 
 Rules:
-- Resolve ALL pronouns and references (they, that, it, my decision, the situation, etc.) using context
-- Keep the rewritten query concise (1-2 sentences)
-- Preserve the user's original intent
-- Do NOT add assumptions not present in the conversation
+- Identify the PRIMARY TOPIC of the conversation (e.g. career skills, retirement, marriage, health, etc.)
+- ALWAYS preserve that primary topic in the rewritten query — do not drift to secondary mentions (e.g. if the topic is "career skills", do not focus on "boundaries" just because it appeared in an answer)
+- Resolve ALL pronouns and vague references (they, that, it, my decision, the situation, etc.) using context
+- Keep the rewritten query to 1-2 sentences, concrete and specific
+- The rewritten query must read like a standalone question someone would search for, not a continuation of a chat
+- Do NOT add assumptions beyond what the conversation contains
 - Return JSON: {"contextual_query": "..."}
 EOT;
 

@@ -160,55 +160,92 @@ class RagPipeline {
         // ---- STEP 8: Build conversation context block for LLM ----
         $conversationContextBlock = '';
         if ($intentType === 'FOLLOW_UP' && !empty($dbHistory)) {
-            // Inject recent turns as context for the LLM to understand follow-up correctly
-            $recentTurns = array_slice($dbHistory, -$maxTurns * 2);
-            $conversationContextBlock = "\n\nCONVERSATION CONTEXT (recent exchange — this question is a follow-up):\n";
-            foreach ($recentTurns as $m) {
-                $role = ucfirst($m['role']);
-                $conversationContextBlock .= "{$role}: " . mb_substr($m['content'], 0, 300) . "\n";
+            // Extract the very first user question to anchor the original topic
+            $firstUserMsg = '';
+            foreach ($dbHistory as $m) {
+                if (($m['role'] ?? '') === 'user') {
+                    $firstUserMsg = mb_substr($m['content'], 0, 200);
+                    break;
+                }
             }
-            $conversationContextBlock .= "\nThe user's current message refers back to the above conversation.\n";
-        } elseif (!empty($dbHistory)) {
-            // For standalone queries, only send a brief anti-repetition note
-            $prevAnswers = array_filter($dbHistory, fn($m) => $m['role'] === 'assistant');
+
+            // Inject recent turns — limit to last 3 pairs (user+assistant) to keep prompt lean
+            $recentTurns = array_slice($dbHistory, -6);
+            $conversationContextBlock = "\n\n===CONVERSATION HISTORY (this is a follow-up — use this to understand context)===\n";
+            if (!empty($firstUserMsg)) {
+                $conversationContextBlock .= "Original topic: {$firstUserMsg}\n\n";
+            }
+            foreach ($recentTurns as $m) {
+                $role    = ucfirst($m['role']);
+                $snippet = mb_substr($m['content'] ?? '', 0, 250);
+                $conversationContextBlock .= "{$role}: {$snippet}\n";
+            }
+            $conversationContextBlock .= "\n===END CONVERSATION HISTORY===\n";
+
+            // Strong anti-repetition — pull exact phrases from last 2 assistant answers
+            $prevAnswers = array_values(array_filter($dbHistory, fn($m) => $m['role'] === 'assistant'));
             if (!empty($prevAnswers)) {
-                $conversationContextBlock = "\n\nPrevious answers already given in this session (DO NOT repeat the same phrases or insights):\n";
-                foreach (array_slice(array_values($prevAnswers), -3) as $idx => $prev) {
-                    $conversationContextBlock .= ($idx + 1) . '. ' . mb_substr($prev['content'], 0, 200) . "...\n";
+                $lastTwo = array_slice($prevAnswers, -2);
+                $conversationContextBlock .= "\nDO NOT REPEAT these themes or phrases already given:\n";
+                foreach ($lastTwo as $i => $prev) {
+                    $conversationContextBlock .= ($i + 1) . '. ' . mb_substr($prev['content'], 0, 300) . "...\n";
+                }
+            }
+        } elseif (!empty($dbHistory)) {
+            $prevAnswers = array_values(array_filter($dbHistory, fn($m) => $m['role'] === 'assistant'));
+            if (!empty($prevAnswers)) {
+                $lastTwo = array_slice($prevAnswers, -2);
+                $conversationContextBlock = "\nThis is a fresh question. Do NOT repeat the following already-given advice:\n";
+                foreach ($lastTwo as $i => $prev) {
+                    $conversationContextBlock .= ($i + 1) . '. ' . mb_substr($prev['content'], 0, 250) . "...\n";
                 }
             }
         }
 
         // ---- STEP 9: Language instruction ----
         $langInstruction = match($activeLang) {
-            'hi' => 'CRITICAL LANGUAGE INSTRUCTION: You MUST formulate your entire response in natural, fluent Hindi (हिंदी) in Devanagari script. Speak with warmth, depth, and empathy.',
-            'mr' => 'CRITICAL LANGUAGE INSTRUCTION: You MUST formulate your entire response in natural, fluent Marathi (मराठी) in Devanagari script. Speak with warmth, depth, and empathy.',
-            default => 'CRITICAL LANGUAGE INSTRUCTION: Answer in warm, natural, human conversation style in English with depth and care.',
+            'hi' => 'LANGUAGE: Respond entirely in natural, warm, conversational Hindi (हिंदी) in Devanagari script.',
+            'mr' => 'LANGUAGE: Respond entirely in natural, warm, conversational Marathi (मराठी) in Devanagari script.',
+            default => '',
         };
 
-        // ---- STEP 10: System prompt ----
+        // ---- STEP 10: System prompt — conversational, natural, ChatGPT-style ----
         $followUpNote = $intentType === 'FOLLOW_UP'
-            ? "\nIMPORTANT: This is a FOLLOW-UP question. The user is continuing a conversation. Their question refers to context already discussed. Use the CONVERSATION CONTEXT section above to understand what they are asking about.\n"
+            ? "This is a FOLLOW-UP question in an ongoing conversation. Refer to the CONVERSATION HISTORY section below to understand what the user is asking about. Stay tightly on the same topic — do not wander into unrelated areas."
             : '';
 
-        $systemPrompt =
-            "You are Ask LifeGPT, an AI assistant trained on a growing collection of real human life experiences, advice, and wisdom.\n" .
-            "Answer the user's question in a warm, natural, human conversation style based SPECIFICALLY on the provided LifeGPT story experiences.\n" .
-            $followUpNote .
-            "\nRESPONSE LENGTH AND DEPTH GUIDELINES:\n" .
-            "- Provide a comprehensive, in-depth, and well-developed response (typically 3 to 4 substantial paragraphs). Do NOT give a brief or superficial 1-paragraph summary.\n" .
-            "- Paragraph 1: Directly address the user's dilemma with empathy and practical framing, clarifying the core tension or challenge.\n" .
-            "- Paragraphs 2 & 3: Deeply synthesize the specific life turning points, real setbacks, and hard-won wisdom from the retrieved contributor experiences. Discuss specific decisions that worked, common mistakes or emotional pitfalls to avoid, and how contributors navigated the journey.\n" .
-            "- Paragraph 4: Conclude with thoughtful, actionable takeaways and grounded perspective for someone facing this situation today.\n" .
-            "\nSTRICT INTEGRITY & PRIVACY RULES:\n" .
-            "1. Answer the user's actual question directly and thoroughly.\n" .
-            "2. Use the retrieved LifeGPT stories as your primary evidence and context. Synthesize multiple stories together.\n" .
-            "3. NEVER invent an experience, never fabricate a story, and never invent a quote.\n" .
-            "4. NEVER mention, invent, or attribute any personal names or persona names (such as Linda, Maria, Helen, John, David, Robert, etc.). Refer to contributors anonymously (e.g., 'A contributor reflected that...', 'People who went through this shared that...').\n" .
-            "5. Avoid using markdown formatting (like asterisks **, hashtags #, or bullet characters); format your answer in clean, readable paragraphs suitable for a chat bubble.\n" .
-            $langInstruction . "\n" .
-            $conversationContextBlock . "\n" .
-            'You MUST return a JSON object with an "answer" key containing your complete response.';
+        $systemPrompt = <<<PROMPT
+You are Ask LifeGPT — an AI powered by a real archive of human life stories, wisdom, and lived experience.
+
+Your job is to answer the user's question like a thoughtful, well-read friend who has heard thousands of real human stories — NOT like a research assistant reading out case summaries.
+
+HOW TO SOUND:
+- Speak naturally and directly. Not every answer needs to start with a long framing paragraph.
+- Vary your response length to match the question. A sharp focused question gets a direct answer. A big open-ended question gets more depth. Never pad to fill space.
+- DO NOT open with "Career growth is..." or "It can feel like..." style generic scene-setting every single time. Get to the point.
+- DO NOT close every answer with a bullet-list of "practical steps" or "putting these insights together..." — only add a list when it genuinely helps.
+- Do NOT end with the same closing pattern every time. Each answer should feel fresh and unique.
+
+HOW TO USE THE STORIES:
+- The retrieved experiences are your source material. Synthesize them into your own voice — do NOT quote them like a report.
+- NEVER say "A contributor shared...", "People who went through this reported...", "Several stories highlighted...", "One contributor reflected..." — this sounds clinical and repetitive.
+- Instead, speak the insight directly: "What actually works, from what we've seen, is...", "The honest pattern is...", "Something that comes up again and again is...", "Here's the thing most people discover..."
+- Draw on the specific situations, decisions, and turning points from the stories — but blend them naturally, not as numbered examples.
+
+FOR FOLLOW-UP QUESTIONS:
+- Stay tightly on the topic from the conversation history. Do not retrieve or introduce themes from unrelated life domains.
+- Answer only what was asked. Do not repeat advice already given.
+- Build on what was said before, not re-explain it.
+
+STRICT RULES:
+1. Answer ONLY based on what the retrieved stories actually support. Do not invent experiences.
+2. NEVER use real names. Refer to people as "someone who went through this", "people in this situation", etc.
+3. No markdown formatting (no **, ##, bullet points with dashes). Write in clean readable paragraphs.
+4. Return a JSON object with a single key: {"answer": "...your full response here..."}
+{$followUpNote}
+{$langInstruction}
+{$conversationContextBlock}
+PROMPT;
 
         // User message content — for FOLLOW_UP queries, include the rewritten query label so LLM understands
         $userMsgContent = $intentType === 'FOLLOW_UP' && $contextualQuery !== $userQuery
