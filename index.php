@@ -13,13 +13,6 @@ require_once __DIR__ . '/includes/header.php';
         <span class="step-badge" style="background-color: var(--color-mint-bg); color: var(--color-primary); font-size: 0.85rem; letter-spacing: 0.1em; margin-bottom: 1rem;">
             POWERED BY PEOPLE. ORGANIZED BY AI.
         </span>
-                <!-- Prominent Home Page Language Selector -->
-        <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: #ffffff; border: 1.5px solid var(--color-border); border-radius: var(--radius-pill); padding: 0.4rem 1.1rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-subtle);">
-            <span style="font-size: 0.95rem; color: var(--color-text-main);">🌐 <strong>Language / भाषा / भाषा:</strong></span>
-            <button type="button" class="lang-btn <?php echo ($uiLang ?? 'en') === 'en' ? 'active' : ''; ?>" onclick="switchLanguage('en')" style="font-size: 0.92rem; font-weight: 600; padding: 0.3rem 0.75rem;">🇬🇧 English</button>
-            <button type="button" class="lang-btn <?php echo ($uiLang ?? 'en') === 'hi' ? 'active' : ''; ?>" onclick="switchLanguage('hi')" style="font-size: 0.92rem; font-weight: 600; padding: 0.3rem 0.75rem;">🇮🇳 हिन्दी (Hindi)</button>
-            <button type="button" class="lang-btn <?php echo ($uiLang ?? 'en') === 'mr' ? 'active' : ''; ?>" onclick="switchLanguage('mr')" style="font-size: 0.92rem; font-weight: 600; padding: 0.3rem 0.75rem;">🇮🇳 मराठी (Marathi)</button>
-        </div>
 
         <h1 style="font-size: 3.25rem; margin-bottom: 1rem; color: var(--color-primary); line-height: 1.15;">
             Your life has answers someone else needs.

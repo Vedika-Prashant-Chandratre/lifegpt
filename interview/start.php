@@ -165,7 +165,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Section 3: Story Length -->
         <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-amber);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>â±ï¸</span> Section 3: Story Length
+                Section 3: Story Length
             </h2>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
@@ -195,33 +195,11 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         </div>
 
-        
-        <!-- Section 4: Language Preference -->
-        <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-primary);">
-            <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem;">
-                <span class="notranslate" translate="no">&#127760;</span> Section 4: Language Preference
-            </h2>
-            <p class="text-sm" style="margin-bottom: 1rem; color: var(--color-text-muted);">Choose the language in which the AI host will ask your questions.</p>
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <label style="border: 2px solid var(--color-primary); background: var(--color-mint-bg); border-radius: var(--radius-md); padding: 1rem 1.5rem; cursor: pointer; display: flex; gap: 0.6rem; align-items: center;">
-                    <input type="radio" name="language" value="en" class="form-check-input" checked>
-                    <div><strong>English</strong></div>
-                </label>
-                <label style="border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem 1.5rem; cursor: pointer; display: flex; gap: 0.6rem; align-items: center;">
-                    <input type="radio" name="language" value="hi" class="form-check-input">
-                    <div><strong>Hindi (हिन्दी)</strong></div>
-                </label>
-                <label style="border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem 1.5rem; cursor: pointer; display: flex; gap: 0.6rem; align-items: center;">
-                    <input type="radio" name="language" value="mr" class="form-check-input">
-                    <div><strong>Marathi (मराठी)</strong></div>
-                </label>
-            </div>
-        </div>
 
-        <!-- Section 5: Contributor Identity & Privacy -->
+        <!-- Section 4: Contributor Identity & Privacy -->
         <div class="card" style="margin-bottom: 2.5rem; border-top: 5px solid var(--color-primary);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span class="notranslate" translate="no">&#128100;</span> Section 5: Contributor Identity & Archive Settings
+                <span class="notranslate" translate="no">&#128100;</span> Section 4: Contributor Identity & Archive Settings
             </h2>
 
             <?php if ($isLoggedIn): ?>
@@ -313,3 +291,4 @@ updateDurationCards();
 <?php
 require_once __DIR__ . '/../includes/footer.php';
 ?>
+

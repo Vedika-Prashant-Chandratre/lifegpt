@@ -81,6 +81,9 @@ define('APP_ENV', $appEnv);
 define('APP_URL', rtrim(config('APP_URL', 'http://localhost/lifegpt'), '/'));
 define('APP_SECRET', config('APP_SECRET', 'default_secret_please_change'));
 
+// Feature flags
+define('SHOW_GROUNDING_SCORE', filter_var(config('SHOW_GROUNDING_SCORE', 'true'), FILTER_VALIDATE_BOOLEAN));
+
 // Set error reporting based on APP_ENV
 if (APP_ENV === 'local' || APP_ENV === 'development') {
     error_reporting(E_ALL);

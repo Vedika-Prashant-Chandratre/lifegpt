@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Context-aware conversation state ---
     let activeConversationId = config.conversationId || sessionStorage.getItem('lifegpt_conversation_id') || '';
     let debugModeEnabled = false; // toggled via ?debug=1 in URL or dev button
+    const showGroundingScore = config.showGroundingScore !== false; // default true; controlled by SHOW_GROUNDING_SCORE env
 
     // Check URL for debug mode
     if (new URLSearchParams(window.location.search).get('debug') === '1') {
@@ -197,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem;">${formattedAnswer}</p>
 
+            ${showGroundingScore ? `
             <div style="margin-top: 0.85rem; padding: 0.85rem 1rem; background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -222,6 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${sourcesHtml}
                 ${debugHtml}
             </div>
+            ` : ''}
 
             <div class="citation-tag notranslate" translate="no">
                 <span class="notranslate" translate="no">&#128220;</span> AI-assisted search across contributed stories

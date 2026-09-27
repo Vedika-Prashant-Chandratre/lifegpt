@@ -120,7 +120,7 @@ require_once __DIR__ . '/../includes/header.php';
 
             <?php if ($isLoggedIn): ?>
                 <button type="button" id="newChatBtn" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; opacity: 0.65; cursor: pointer;" title="Start a fresh conversation — clears conversation memory">
-                    <span class="notranslate" translate="no">&#10133;</span> New Chat
+                    New Chat
                 </button>
                 <p style="font-size:0.72rem; color:var(--color-text-muted); margin:-1rem 0 1rem; text-align:center;">
                     &#128279; Context-aware &mdash; follow-up questions understood
@@ -294,9 +294,9 @@ require_once __DIR__ . '/../includes/header.php';
                             </div>
                             <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem;" class="<?php echo ($uiLang !== 'en') ? 'notranslate' : ''; ?>" translate="<?php echo ($uiLang !== 'en') ? 'no' : 'yes'; ?>"><?php echo nl2br(htmlspecialchars($msg['content'])); ?></p>
                             
-                            <?php 
+                            <?php
                             $groundingScore = isset($msg['grounding_score']) ? (int)$msg['grounding_score'] : (isset($msg['accuracy']) ? (int)$msg['accuracy'] : null);
-                            if ($groundingScore !== null):
+                            if ($groundingScore !== null && SHOW_GROUNDING_SCORE):
                                 $confLabel = $msg['confidence_label'] ?? ($groundingScore >= 80 ? 'High grounding' : ($groundingScore >= 60 ? 'Moderate grounding' : ($groundingScore >= 40 ? 'Limited grounding' : 'Insufficient grounding')));
                                 $confColor = $msg['confidence_color'] ?? ($groundingScore >= 80 ? '#16a34a' : ($groundingScore >= 60 ? '#d97706' : ($groundingScore >= 40 ? '#ea580c' : '#dc2626')));
                                 $confBadge = $msg['confidence_badge'] ?? ($groundingScore >= 80 ? '#dcfce7' : ($groundingScore >= 60 ? '#fef3c7' : ($groundingScore >= 40 ? '#ffedd5' : '#fee2e2')));
@@ -383,7 +383,8 @@ require_once __DIR__ . '/../includes/header.php';
 <script>
 window.LifeGPTConfig = {
     appUrl: '<?php echo APP_URL; ?>',
-    csrfToken: '<?php echo CSRF::getToken(); ?>'
+    csrfToken: '<?php echo CSRF::getToken(); ?>',
+    showGroundingScore: <?php echo SHOW_GROUNDING_SCORE ? 'true' : 'false'; ?>
 };
 </script>
 <script src="<?php echo APP_URL; ?>/assets/js/ask.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/ask.js'); ?>"></script>
