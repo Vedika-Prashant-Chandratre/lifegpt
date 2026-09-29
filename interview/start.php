@@ -138,7 +138,7 @@ require_once __DIR__ . '/../includes/header.php';
                          style="cursor: pointer; text-align: center; padding: 1.5rem; border: 2px solid var(--color-border); border-radius: var(--radius-md);">
                         <div class="notranslate" translate="no" style="font-size: 2.2rem; margin-bottom: 0.5rem;"><?php echo $emoji; ?></div>
                         <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem; color: var(--color-primary);"><?php echo htmlspecialchars($p['name']); ?></h3>
-                        <p class="text-sm" style="font-size: 0.85rem; font-style: italic;">&ldquo;<?php echo htmlspecialchars(mb_substr($p['greeting'], 0, 60)); ?>...&rdquo;</p>
+                        <p class="text-sm" style="font-size: 0.85rem; font-style: italic;">&ldquo;<?php echo htmlspecialchars(mb_substr($p['greeting'], 0, 60)); ?>...&rdquo;</p>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -165,7 +165,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Section 3: Story Length -->
         <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-amber);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>â±ï¸</span> Section 3: Story Length
+                <span class="notranslate" translate="no">&#9201;</span> Section 3: Story Length
             </h2>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
@@ -203,15 +203,15 @@ require_once __DIR__ . '/../includes/header.php';
             </h2>
             <p class="text-sm" style="margin-bottom: 1rem; color: var(--color-text-muted);">Choose the language in which the AI host will ask your questions.</p>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <label style="border: 2px solid var(--color-primary); background: var(--color-mint-bg); border-radius: var(--radius-md); padding: 1rem 1.5rem; cursor: pointer; display: flex; gap: 0.6rem; align-items: center;">
+                <label class="language-card">
                     <input type="radio" name="language" value="en" class="form-check-input" checked>
                     <div><strong>English</strong></div>
                 </label>
-                <label style="border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem 1.5rem; cursor: pointer; display: flex; gap: 0.6rem; align-items: center;">
+                <label class="language-card">
                     <input type="radio" name="language" value="hi" class="form-check-input">
                     <div><strong>Hindi (हिन्दी)</strong></div>
                 </label>
-                <label style="border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 1rem 1.5rem; cursor: pointer; display: flex; gap: 0.6rem; align-items: center;">
+                <label class="language-card">
                     <input type="radio" name="language" value="mr" class="form-check-input">
                     <div><strong>Marathi (मराठी)</strong></div>
                 </label>
@@ -308,6 +308,31 @@ document.querySelectorAll('input[name="duration_type"]').forEach(radio => {
 
 // Run immediately to sync initial highlight with checked option
 updateDurationCards();
+
+function updateLanguageCards() {
+    document.querySelectorAll('.language-card').forEach(card => {
+        const radio = card.querySelector('input[name="language"]');
+        const strong = card.querySelector('strong');
+        if (radio && radio.checked) {
+            card.classList.add('selected');
+            card.style.borderColor = 'var(--color-primary)';
+            card.style.backgroundColor = 'var(--color-mint-bg)';
+            if (strong) strong.style.color = 'var(--color-primary)';
+        } else {
+            card.classList.remove('selected');
+            card.style.borderColor = 'var(--color-border)';
+            card.style.backgroundColor = '#FFFFFF';
+            if (strong) strong.style.color = '';
+        }
+    });
+}
+
+document.querySelectorAll('input[name="language"]').forEach(radio => {
+    radio.addEventListener('change', updateLanguageCards);
+});
+
+// Run immediately to sync initial highlight with checked option
+updateLanguageCards();
 </script>
 
 <?php

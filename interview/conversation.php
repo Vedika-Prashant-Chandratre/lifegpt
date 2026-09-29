@@ -165,9 +165,6 @@ require_once __DIR__ . '/../includes/header.php';
                     <button type="button" id="btnSkip" class="btn btn-outline" style="padding: 0.75rem 1.35rem;">
                         Skip
                     </button>
-                    <button type="button" id="btnEndEarly" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
-                        🏁 Finish Story & View Summary
-                    </button>
                 </div>
             </div>
         </form>

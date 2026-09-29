@@ -21,21 +21,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatContainer = document.getElementById('chatContainer');
     const questionProgress = document.getElementById('questionProgress');
     const progressBar = document.getElementById('progressBar');
-    
+
     const answerForm = document.getElementById('answerForm');
     const answerText = document.getElementById('answerText');
     const btnSubmit = document.getElementById('btnSubmit');
     const btnSkip = document.getElementById('btnSkip');
     const btnPause = document.getElementById('btnPause');
     const btnReplay = document.getElementById('btnReplay');
-    const btnEndEarly = document.getElementById('btnEndEarly');
     const profanityBanner = document.getElementById('profanityAlertBanner');
-    
+
     // Recording controls
     const btnRecord = document.getElementById('btnRecord');
     const btnStopRecord = document.getElementById('btnStopRecord');
     const recordingIndicator = document.getElementById('recordingIndicator');
-    
+
     // Transcript Review controls
     const transcriptReviewBox = document.getElementById('transcriptReviewBox');
     const transcriptReviewText = document.getElementById('transcriptReviewText');
@@ -55,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'fuck', 'shit', 'asshole', 'bitch', 'cunt', 'bastard', 'nigger', 'faggot',
         'motherfucker', 'cock', 'pussy', 'whore', 'slut', 'dick', 'piss'
     ];
-    
+
     const guestToken = config.guestToken || '';
 
     function getCsrfToken() {
@@ -162,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     btnRecord.style.display = 'inline-flex';
                     if (btnStopRecord) btnStopRecord.style.display = 'none';
                 }
-                
+
                 if (finalSpeechTranscript.trim().length > 0) {
                     showTranscriptReview(finalSpeechTranscript.trim());
                 }
@@ -177,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Microphone error: ' + err + '. Please try typing your response.');
             }
         });
-        
+
         if (!speechRecognizer.isSupported() && btnRecord) {
             btnRecord.style.display = 'none';
         }
@@ -197,21 +196,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function fetchNextQuestion() {
         btnSubmit.disabled = true;
         btnSubmit.textContent = 'Organizing thoughts...';
-        
+
         sendApiRequest(`${appUrl}/api/index.php?action=next_question`)
         .then(data => {
             btnSubmit.disabled = false;
-            
+
             if (data.success) {
                 if (data.interview_complete) {
                     handleSessionCompletion();
                     return;
                 }
-                
+
                 currentQuestion = data.next_question;
                 questionCount = data.question_sequence;
                 targetQuestionLimit = data.target_limit || 5;
-                
+
                 // Never speak automatically; ensure any prior speech is cancelled and label reset
                 if (synthPlayer) {
                     synthPlayer.cancel();
@@ -220,13 +219,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (btnReplay) {
                     btnReplay.innerHTML = '🔊 Read Question';
                 }
-                
+
                 updateProgressUI();
                 addChatBubble(currentQuestion, 'ai');
-                
+
                 answerText.value = '';
                 validateInputText();
-                
+
             } else {
                 alert('Error loading question: ' + (data.error || 'Unknown error'));
             }
@@ -255,10 +254,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (speechRecognizer) {
             speechRecognizer.stop();
         }
-        
+
         btnSubmit.disabled = true;
         btnSubmit.textContent = 'Saving answer...';
-        
+
         sendApiRequest(`${appUrl}/api/index.php?action=save_answer`, {
             answer: text,
             input_method: method
@@ -282,17 +281,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function addChatBubble(text, role) {
         const bubble = document.createElement('div');
         bubble.className = `chat-bubble chat-bubble-${role}`;
-        
+
         const meta = document.createElement('div');
         meta.className = 'chat-bubble-meta';
         meta.textContent = role === 'ai' ? '🌱 LifeGPT Host' : 'You';
-        
+
         const body = document.createElement('div');
         body.textContent = text;
-        
+
         bubble.appendChild(meta);
         bubble.appendChild(body);
-        
+
         chatContainer.appendChild(bubble);
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
@@ -314,16 +313,16 @@ document.addEventListener('DOMContentLoaded', function() {
         transcriptReviewText.textContent = `"${transcript}"`;
         transcriptReviewBox.style.display = 'block';
         answerForm.style.opacity = '0.4';
-        
+
         answerText.disabled = true;
         btnSubmit.disabled = true;
         if (btnRecord) btnRecord.disabled = true;
     }
-    
+
     function hideTranscriptReview() {
         transcriptReviewBox.style.display = 'none';
         answerForm.style.opacity = '1';
-        
+
         answerText.disabled = false;
         btnSubmit.disabled = false;
         if (btnRecord) btnRecord.disabled = false;
@@ -335,10 +334,33 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         const text = answerText.value.trim();
         if (text.length === 0) {
+            if (questionCount >= targetQuestionLimit) {
+                if (synthPlayer) synthPlayer.cancel();
+                if (speechRecognizer) speechRecognizer.stop();
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = 'Completing story...';
+
+                sendApiRequest(`${appUrl}/api/index.php?action=complete`)
+                .then(data => {
+                    if (data.success) {
+                        handleSessionCompletion();
+                    } else {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = '🏁 Finish Story & View Summary';
+                        alert('Error completing story: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '🏁 Finish Story & View Summary';
+                    alert('Connection failure while completing story.');
+                });
+                return;
+            }
             alert('Please share your thoughts before proceeding.');
             return;
         }
-        
+
         saveAnswer(text, 'typing');
     });
 
@@ -377,39 +399,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    if (btnEndEarly) {
-        btnEndEarly.addEventListener('click', function() {
-            if (synthPlayer) synthPlayer.cancel();
-            if (speechRecognizer) speechRecognizer.stop();
-            if (confirm('Would you like to finish your story now and view your summary?')) {
-                btnEndEarly.disabled = true;
-                btnEndEarly.textContent = 'Completing...';
-                
-                sendApiRequest(`${appUrl}/api/index.php?action=complete`)
-                .then(data => {
-                    if (data.success) {
-                        handleSessionCompletion();
-                    } else {
-                        btnEndEarly.disabled = false;
-                        btnEndEarly.textContent = '🏁 Finish Story & View Summary';
-                        alert('Error completing story: ' + (data.error || 'Unknown error'));
-                    }
-                })
-                .catch(err => {
-                    btnEndEarly.disabled = false;
-                    btnEndEarly.textContent = '🏁 Finish Story & View Summary';
-                    alert('Connection failure while completing story.');
-                });
-            }
-        });
-    }
 
     if (btnRecord) {
         btnRecord.addEventListener('click', function() {
             if (synthPlayer) synthPlayer.cancel();
             if (speechRecognizer) speechRecognizer.start();
         });
-        
+
         if (btnStopRecord) {
             btnStopRecord.addEventListener('click', function() {
                 if (speechRecognizer) speechRecognizer.stop();

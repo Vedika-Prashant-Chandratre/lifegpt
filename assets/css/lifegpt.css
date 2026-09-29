@@ -769,6 +769,36 @@ textarea.form-control {
     color: var(--color-primary) !important;
 }
 
+/* Language Preference Card Styles (Section 4) */
+.language-card {
+    border: 2px solid var(--color-border);
+    background-color: #FFFFFF;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    transition: var(--transition);
+    user-select: none;
+}
+
+.language-card:hover {
+    border-color: var(--color-primary-light);
+}
+
+.language-card.selected,
+.language-card:has(input[type="radio"]:checked) {
+    border-color: var(--color-primary) !important;
+    background-color: var(--color-mint-bg) !important;
+}
+
+.language-card.selected strong,
+.language-card:has(input[type="radio"]:checked) strong {
+    color: var(--color-primary) !important;
+}
+
+
 .citation-tag {
     display: inline-flex;
     align-items: center;
