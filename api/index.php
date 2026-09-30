@@ -364,7 +364,8 @@ try {
                     );
                 }
 
-                echo json_encode(['success' => true, 'message' => 'Story summary updated successfully.']);
+                header('Location: ' . APP_URL . '/interview/success.php');
+                exit;
             }
             break;
 
