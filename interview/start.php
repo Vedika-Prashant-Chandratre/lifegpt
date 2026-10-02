@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $userId = $isLoggedIn ? (int)$_SESSION['user_id'] : null;
 
         $interviewId = DB::insert(
-            "INSERT INTO lg_interviews (uuid, user_id, persona_id, topic_id, status, language, input_mode, duration_type) 
+            "INSERT INTO lg_interviews (uuid, user_id, persona_id, topic_id, status, language, input_mode, duration_type)
              VALUES (:uuid, :user_id, :persona_id, :topic_id, 'in_progress', :language, 'mixed', :duration_type)",
             [
                 'uuid' => $uuid,
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Insert Consent
         DB::insert(
-            "INSERT INTO lg_consents (interview_id, storage_consent, rag_consent, quotes_consent, research_consent, publication_consent, attribution_type, attribution_value, withdrawn, version) 
+            "INSERT INTO lg_consents (interview_id, storage_consent, rag_consent, quotes_consent, research_consent, publication_consent, attribution_type, attribution_value, withdrawn, version)
              VALUES (:interview_id, 1, 1, 1, 1, 1, :attribution_type, :attribution_value, 0, 1)",
             [
                 'interview_id' => $interviewId,
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tokenHash = hash('sha256', $guestToken);
             $expiry = date('Y-m-d H:i:s', strtotime('+30 days'));
             DB::insert(
-                "INSERT INTO lg_guest_access_tokens (interview_id, token_hash, expiry) 
+                "INSERT INTO lg_guest_access_tokens (interview_id, token_hash, expiry)
                  VALUES (:interview_id, :token_hash, :expiry)",
                 ['interview_id' => $interviewId, 'token_hash' => $tokenHash, 'expiry' => $expiry]
             );
@@ -88,7 +88,7 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div style="max-width: 920px; margin: 1rem auto 4rem auto;">
-    
+
     <!-- Setup Header -->
     <div style="text-align: center; margin-bottom: 3rem;">
         <?php if ($isLoggedIn): ?>
@@ -122,7 +122,7 @@ require_once __DIR__ . '/../includes/header.php';
             </h2>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
-                <?php foreach ($personas as $idx => $p): 
+                <?php foreach ($personas as $idx => $p):
                     $emoji = '&#129489;';
                     switch($p['persona_key']) {
                         case 'grandchild': $emoji = '&#129489;'; break; // Curious Grandchild
@@ -132,9 +132,9 @@ require_once __DIR__ . '/../includes/header.php';
                         case 'historian':  $emoji = '&#128220;'; break; // Historian
                     }
                 ?>
-                    <div class="card persona-card <?php echo ($idx === 0) ? 'selected' : ''; ?>" 
-                         data-id="<?php echo $p['persona_id']; ?>" 
-                         onclick="selectPersona(this)" 
+                    <div class="card persona-card <?php echo ($idx === 0) ? 'selected' : ''; ?>"
+                         data-id="<?php echo $p['persona_id']; ?>"
+                         onclick="selectPersona(this)"
                          style="cursor: pointer; text-align: center; padding: 1.5rem; border: 2px solid var(--color-border); border-radius: var(--radius-md);">
                         <div class="notranslate" translate="no" style="font-size: 2.2rem; margin-bottom: 0.5rem;"><?php echo $emoji; ?></div>
                         <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem; color: var(--color-primary);"><?php echo htmlspecialchars($p['name']); ?></h3>
@@ -152,8 +152,8 @@ require_once __DIR__ . '/../includes/header.php';
 
             <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
                 <?php foreach ($topics as $idx => $t): ?>
-                    <button type="button" class="btn <?php echo ($idx === 0) ? 'btn-primary' : 'btn-outline'; ?> topic-pill-btn" 
-                            data-id="<?php echo $t['topic_id']; ?>" 
+                    <button type="button" class="btn <?php echo ($idx === 0) ? 'btn-primary' : 'btn-outline'; ?> topic-pill-btn"
+                            data-id="<?php echo $t['topic_id']; ?>"
                             onclick="selectTopicPill(this)"
                             style="border-radius: var(--radius-pill); font-size: 0.95rem; padding: 0.6rem 1.35rem;">
                         <?php echo htmlspecialchars($t['name']); ?>
@@ -195,33 +195,14 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         </div>
 
-        
-        <!-- Section 4: Language Preference -->
-        <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-primary);">
-            <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem;">
-                <span class="notranslate" translate="no">&#127760;</span> Section 4: Language Preference
-            </h2>
-            <p class="text-sm" style="margin-bottom: 1rem; color: var(--color-text-muted);">Choose the language in which the AI host will ask your questions.</p>
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <label class="language-card">
-                    <input type="radio" name="language" value="en" class="form-check-input" checked>
-                    <div><strong>English</strong></div>
-                </label>
-                <label class="language-card">
-                    <input type="radio" name="language" value="hi" class="form-check-input">
-                    <div><strong>Hindi (हिन्दी)</strong></div>
-                </label>
-                <label class="language-card">
-                    <input type="radio" name="language" value="mr" class="form-check-input">
-                    <div><strong>Marathi (मराठी)</strong></div>
-                </label>
-            </div>
-        </div>
+
+        <!-- English is the only supported interview language -->
+            <input type="hidden" name="language" value="en">
 
         <!-- Section 5: Contributor Identity & Privacy -->
         <div class="card" style="margin-bottom: 2.5rem; border-top: 5px solid var(--color-primary);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span class="notranslate" translate="no">&#128100;</span> Section 5: Contributor Identity & Archive Settings
+                <span class="notranslate" translate="no">&#128100;</span> Section 4: Contributor Identity & Archive Settings
             </h2>
 
             <?php if ($isLoggedIn): ?>

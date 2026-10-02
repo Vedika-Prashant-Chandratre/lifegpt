@@ -109,13 +109,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
                 <a href="<?php echo APP_URL; ?>/interview/start.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/interview/') !== false) ? 'active' : ''; ?>"><?php echo $t['nav_share'] ?? 'Share a Story'; ?></a>
                 <a href="<?php echo APP_URL; ?>/ask/" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/ask/') !== false) ? 'active' : ''; ?>"><?php echo $t['nav_ask'] ?? 'Ask LifeGPT'; ?></a>
 
-                <!-- Top Right Language Switcher -->
-                <div class="lang-switcher-pill notranslate" translate="no" title="Choose Language / भाषा चुनें / भाषा निवडा">
-                    <span class="notranslate" translate="no" style="font-size: 0.85rem; margin-right: 0.15rem;">&#127760;</span>
-                    <button type="button" class="lang-btn <?php echo $uiLang === 'en' ? 'active' : ''; ?>" onclick="switchLanguage('en')">English</button>
-                    <button type="button" class="lang-btn <?php echo $uiLang === 'hi' ? 'active' : ''; ?>" onclick="switchLanguage('hi')">हिन्दी</button>
-                    <button type="button" class="lang-btn <?php echo $uiLang === 'mr' ? 'active' : ''; ?>" onclick="switchLanguage('mr')">मराठी</button>
-                </div>
+
 
                 <?php if ($isLoggedIn): ?>
                     <a href="<?php echo APP_URL; ?>/dashboard/" class="btn btn-secondary" style="min-height: 40px; padding: 0.35rem 1.25rem; font-size: 0.9rem;">
