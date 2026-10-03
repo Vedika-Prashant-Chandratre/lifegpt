@@ -10,14 +10,8 @@ $isLoggedIn = Auth::isLoggedIn();
 $user = Auth::getCurrentUser();
 $isAdmin = Auth::isAdmin();
 
-// Language detection & persistence (defaults to 'en')
-if (isset($_GET['lang']) && in_array($_GET['lang'], ['en', 'hi', 'mr'])) {
-    $_SESSION['ui_lang'] = $_GET['lang'];
-    setcookie('ui_lang', $_GET['lang'], time() + (86400 * 30), '/');
-} elseif (isset($_COOKIE['ui_lang']) && in_array($_COOKIE['ui_lang'], ['en', 'hi', 'mr'])) {
-    $_SESSION['ui_lang'] = $_COOKIE['ui_lang'];
-}
-$uiLang = $_SESSION['ui_lang'] ?? 'en';
+// Language forced to English
+$uiLang = 'en';
 $t = getLangStrings($uiLang);
 
 $currentPage = basename($_SERVER['PHP_SELF']);
@@ -51,40 +45,6 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
         .skiptranslate > iframe { display: none !important; }
         #google_translate_element { display: none !important; }
 
-        /* Modern Language Switcher Pill in Header */
-        .lang-switcher-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.2rem;
-            border: 1.5px solid var(--color-border);
-            border-radius: var(--radius-pill);
-            padding: 0.2rem 0.45rem;
-            background: #ffffff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            margin: 0 0.5rem;
-        }
-        .lang-btn {
-            padding: 0.25rem 0.6rem;
-            border-radius: 999px;
-            font-size: 0.82rem;
-            font-weight: 500;
-            color: var(--color-text-muted);
-            text-decoration: none;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-        .lang-btn:hover {
-            color: var(--color-primary);
-            background: var(--color-mint-bg);
-        }
-        .lang-btn.active {
-            color: var(--color-primary);
-            background: var(--color-mint-bg);
-            font-weight: 700;
-        }
     </style>
 </head>
 <body>
@@ -99,7 +59,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
             
             <!-- Mobile Menu Toggle Button -->
             <button class="nav-toggle notranslate" translate="no" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false">
-                &#9776;
+
             </button>
 
             <!-- Main Visitor Navigation Links -->
@@ -108,8 +68,6 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
                 <a href="<?php echo APP_URL; ?>/how-it-works.php" class="nav-link <?php echo ($currentPage === 'how-it-works.php') ? 'active' : ''; ?>"><?php echo $t['nav_how'] ?? 'How It Works'; ?></a>
                 <a href="<?php echo APP_URL; ?>/interview/start.php" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/interview/') !== false) ? 'active' : ''; ?>"><?php echo $t['nav_share'] ?? 'Share a Story'; ?></a>
                 <a href="<?php echo APP_URL; ?>/ask/" class="nav-link <?php echo (strpos($_SERVER['PHP_SELF'], '/ask/') !== false) ? 'active' : ''; ?>"><?php echo $t['nav_ask'] ?? 'Ask LifeGPT'; ?></a>
-
-
 
                 <?php if ($isLoggedIn): ?>
     <a href="<?php echo APP_URL; ?>/dashboard/" class="btn btn-secondary" style="min-height: 40px; padding: 0.35rem 1.25rem; font-size: 0.9rem;">
@@ -142,7 +100,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
         <div class="modal-card">
             <div class="modal-header">
                 <h2>How LifeGPT Works</h2>
-                <button type="button" class="modal-close-btn" onclick="closeHowItWorksModal()" aria-label="Close modal">&#10005;</button>
+                <button type="button" class="modal-close-btn" onclick="closeHowItWorksModal()" aria-label="Close modal"></button>
             </div>
 
             <!-- Step 1: Welcome & Mission -->
@@ -196,64 +154,23 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
         </div>
     </div>
 
-    <!-- Google Translate Script & switchLanguage Handler -->
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'en',
-                includedLanguages: 'en,hi,mr',
-                autoDisplay: false
-            }, 'google_translate_element');
-        }
-
-        function switchLanguage(lang) {
-            // 1. Set backend preference cookie
-            document.cookie = "ui_lang=" + lang + "; path=/; max-age=" + (86400 * 30);
-
-            // 2. Set browser Google Translate cookie
-            if (lang === 'en') {
-                // Clear translate cookie to restore original English
+    <!-- Clear legacy Google Translate cookies to ensure pure English view -->
+    <script>
+        (function() {
+            if (document.cookie.indexOf('googtrans=') !== -1 || document.cookie.indexOf('ui_lang=') !== -1) {
                 document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                 document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + window.location.hostname;
-                document.cookie = "googtrans=/en/en; path=/;";
-                document.cookie = "googtrans=/en/en; path=/; domain=" + window.location.hostname;
-            } else {
-                document.cookie = "googtrans=/en/" + lang + "; path=/;";
-                document.cookie = "googtrans=/en/" + lang + "; path=/; domain=" + window.location.hostname;
+                document.cookie = "ui_lang=en; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                var url = new URL(window.location.href);
+                if (url.searchParams.has('lang')) {
+                    url.searchParams.delete('lang');
+                    window.location.href = url.toString();
+                } else {
+                    window.location.reload();
+                }
             }
-
-            // 3. Try to trigger Google Translate dropdown directly if present
-            var combo = document.querySelector('.goog-te-combo');
-            if (combo) {
-                combo.value = lang;
-                combo.dispatchEvent(new Event('change'));
-            }
-
-            // 4. Reload with ?lang= parameter to sync backend session and browser translation
-            var currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set('lang', lang);
-            window.location.href = currentUrl.toString();
-        }
-
-        // Auto-check on page load if googtrans cookie is set but combo hasn't fired
-        document.addEventListener('DOMContentLoaded', function() {
-            var currentLang = '<?php echo $uiLang; ?>';
-            if (currentLang && currentLang !== 'en') {
-                var checkInterval = setInterval(function() {
-                    var combo = document.querySelector('.goog-te-combo');
-                    if (combo) {
-                        if (combo.value !== currentLang) {
-                            combo.value = currentLang;
-                            combo.dispatchEvent(new Event('change'));
-                        }
-                        clearInterval(checkInterval);
-                    }
-                }, 300);
-                setTimeout(function() { clearInterval(checkInterval); }, 5000);
-            }
-        });
+        })();
     </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
     <script>
         let currentModalStep = 1;

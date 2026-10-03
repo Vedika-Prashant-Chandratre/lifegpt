@@ -12,6 +12,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const config = window.LifeGPTConfig || {};
     const appUrl = config.appUrl || '';
 
+    // --- Context-aware conversation state ---
+    let activeConversationId = config.conversationId || sessionStorage.getItem('lifegpt_conversation_id') || '';
+    let debugModeEnabled = false; // toggled via ?debug=1 in URL or dev button
+    const showGroundingScore = config.showGroundingScore !== false; // default true; controlled by SHOW_GROUNDING_SCORE env
+
+    // Check URL for debug mode
+    if (new URLSearchParams(window.location.search).get('debug') === '1') {
+        debugModeEnabled = true;
+    }
+
     function getCsrfToken() {
         const tokenInput = document.querySelector('input[name="csrf_token"]');
         return tokenInput ? tokenInput.value : (config.csrfToken || '');
@@ -110,8 +120,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const confBadge = data.confidence_badge || (score >= 80 ? '#dcfce7' : (score >= 60 ? '#fef3c7' : (score >= 40 ? '#ffedd5' : '#fee2e2')));
         const srcCount = parseInt(data.sources_count || (data.sources ? data.sources.length : 0), 10);
         const disclaimer = data.disclaimer || 'This score reflects how strongly the answer is supported by relevant LifeGPT experiences. It is not a guarantee of factual correctness.';
+        const intentType = data.intent_type || 'STANDALONE';
 
         const formattedAnswer = escapeHtml(data.answer || '').replace(/\n/g, '<br>');
+
+        // Context badge shown on follow-up responses
+        const contextBadge = intentType === 'FOLLOW_UP'
+            ? `<span style="font-size:0.72rem; font-weight:600; padding:0.1rem 0.45rem; border-radius:999px; background:#ede9fe; color:#7c3aed; margin-left:0.4rem;" title="LifeGPT understood this as a follow-up and used conversation context">
+                &#128279; Context-aware
+              </span>`
+            : '';
 
         let sourcesHtml = '';
         if (data.sources && data.sources.length > 0) {
@@ -147,14 +165,40 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
 
+        // Developer debug panel (shown when debug=1 in URL)
+        let debugHtml = '';
+        if (debugModeEnabled && data.debug) {
+            const d = data.debug;
+            const metrics = d.retrieval_metrics || {};
+            const concepts = (d.context_concepts || []).join(', ') || 'none';
+            debugHtml = `
+                <details style="margin-top:0.5rem; border-top:1px dashed #cbd5e1; padding-top:0.4rem;" open>
+                    <summary style="font-size:0.75rem; font-weight:700; color:#64748b; cursor:pointer;">&#128295; Debug Info</summary>
+                    <div style="font-size:0.73rem; font-family:monospace; color:#475569; margin-top:0.3rem; display:grid; grid-template-columns:auto 1fr; gap:0.15rem 0.6rem;">
+                        <span style="font-weight:600;">Intent:</span><span>${escapeHtml(d.intent_type)} (${Math.round((d.intent_confidence||0)*100)}% confidence &mdash; ${escapeHtml(d.intent_reason||'')})</span>
+                        <span style="font-weight:600;">Contextual Query:</span><span style="font-style:italic;">&ldquo;${escapeHtml(d.contextual_query||'same as original')}&rdquo;</span>
+                        <span style="font-weight:600;">Context Concepts:</span><span>${escapeHtml(concepts)}</span>
+                        <span style="font-weight:600;">Mode:</span><span>${escapeHtml(metrics.context_mode||'standalone')}</span>
+                        <span style="font-weight:600;">Best Semantic:</span><span>${(metrics.best_semantic_score||0).toFixed(4)}</span>
+                        <span style="font-weight:600;">Best Keyword:</span><span>${(metrics.best_keyword_score||0).toFixed(4)}</span>
+                        <span style="font-weight:600;">Best Context:</span><span>${(metrics.best_context_score||0).toFixed(4)}</span>
+                        <span style="font-weight:600;">Best Hybrid:</span><span>${(metrics.best_hybrid_score||0).toFixed(4)}</span>
+                        <span style="font-weight:600;">Stories Selected:</span><span>${metrics.selected_stories||0} / ${metrics.total_candidates||0} candidates</span>
+                    </div>
+                </details>
+            `;
+        }
+
         bubble.innerHTML = `
-            <div class="chat-bubble-meta" style="display: flex; align-items: center; gap: 0.4rem;">
+            <div class="chat-bubble-meta" style="display: flex; align-items: center; gap: 0.4rem; flex-wrap:wrap;">
                 <span><span class="notranslate" translate="no">&#129302;</span></span>
                 <strong class="notranslate" translate="no">LifeGPT Host</strong> &bull;
                 <span class="notranslate" translate="no">${escapeHtml(timeStr)}</span>
+                ${contextBadge}
             </div>
             <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem;">${formattedAnswer}</p>
 
+            ${showGroundingScore ? `
             <div style="margin-top: 0.85rem; padding: 0.85rem 1rem; background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -178,7 +222,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 </p>
 
                 ${sourcesHtml}
+                ${debugHtml}
             </div>
+            ` : ''}
 
             <div class="citation-tag notranslate" translate="no">
                 <span class="notranslate" translate="no">&#128220;</span> AI-assisted search across contributed stories
@@ -211,6 +257,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const csrf = getCsrfToken();
 
         try {
+            const requestBody = {
+                query: query,
+                csrf_token: csrf
+            };
+
+            // Attach active conversation_id for context continuity
+            if (activeConversationId) {
+                requestBody.conversation_id = activeConversationId;
+            }
+
+            // Attach debug flag if enabled
+            if (debugModeEnabled) {
+                requestBody.debug = 1;
+            }
+
             const res = await fetch(`${appUrl}/api/index.php?action=ask`, {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -219,10 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-Token': csrf
                 },
-                body: JSON.stringify({
-                    query: query,
-                    csrf_token: csrf
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (loader && loader.parentNode) {
@@ -243,7 +301,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(data.error || 'Failed to retrieve wisdom response.');
             }
 
+            // Update active conversation_id from response
+            if (data.conversation_id) {
+                activeConversationId = data.conversation_id;
+                sessionStorage.setItem('lifegpt_conversation_id', activeConversationId);
+                // Update New Chat button to show active state
+                updateNewChatButton(true);
+            }
+
             renderAiBubble(data, formatTimeNow());
+
+        } catch (err) {
+            if (loader && loader.parentNode) {
+                loader.parentNode.removeChild(loader);
+            }
 
         } catch (err) {
             if (loader && loader.parentNode) {
@@ -296,4 +367,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         executeAsk(q);
     };
+
+    // --- New Chat button ---
+    function updateNewChatButton(hasHistory) {
+        const btn = document.getElementById('newChatBtn');
+        if (!btn) return;
+        if (hasHistory) {
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+        }
+    }
+
+    const newChatBtn = document.getElementById('newChatBtn');
+    if (newChatBtn) {
+        newChatBtn.addEventListener('click', async function() {
+            const csrf = getCsrfToken();
+            try {
+                const res = await fetch(`${appUrl}/api/index.php?action=new_chat`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-Token': csrf
+                    },
+                    body: JSON.stringify({ csrf_token: csrf })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    activeConversationId = data.conversation_id;
+                    sessionStorage.setItem('lifegpt_conversation_id', activeConversationId);
+                    // Clear chat UI
+                    if (chatContainer) {
+                        chatContainer.innerHTML = `
+                            <div style="text-align:center; padding:2rem; color:var(--color-text-muted); font-style:italic; font-size:0.95rem;">
+                                &#128257; New conversation started. Ask LifeGPT anything.
+                            </div>
+                        `;
+                    }
+                    updateNewChatButton(false);
+                }
+            } catch(e) {
+                console.error('New Chat error:', e);
+            }
+        });
+    }
+
+    // Initialize conversation_id from sessionStorage if page reloaded mid-conversation
+    if (!activeConversationId) {
+        const stored = sessionStorage.getItem('lifegpt_conversation_id');
+        if (stored) activeConversationId = stored;
+    }
 });

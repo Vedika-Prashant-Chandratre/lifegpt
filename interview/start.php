@@ -165,7 +165,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Section 3: Story Length -->
         <div class="card" style="margin-bottom: 2rem; border-top: 5px solid var(--color-amber);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span class="notranslate" translate="no">&#9201;</span> Section 3: Story Length
+<span class="notranslate" translate="no">&#9201;</span> Section 3: Story Length
             </h2>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
@@ -195,11 +195,10 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         </div>
 
+<!-- English is the only supported interview language -->
+<input type="hidden" name="language" value="en">
 
-        <!-- English is the only supported interview language -->
-            <input type="hidden" name="language" value="en">
-
-        <!-- Section 5: Contributor Identity & Privacy -->
+        <!-- Section 4: Contributor Identity & Privacy -->
         <div class="card" style="margin-bottom: 2.5rem; border-top: 5px solid var(--color-primary);">
             <h2 style="font-size: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
                 <span class="notranslate" translate="no">&#128100;</span> Section 4: Contributor Identity & Archive Settings

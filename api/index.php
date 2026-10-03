@@ -68,10 +68,22 @@ try {
                 session_start();
             }
 
-            $chatHistory = $_SESSION['ask_history'] ?? [];
-            $result = RagPipeline::ask($query, $chatHistory);
+            // Context-aware conversation support
+            $conversationId = trim($requestData['conversation_id'] ?? $_POST['conversation_id'] ?? $_SESSION['ask_conversation_id'] ?? '');
+            $debugMode      = !empty($requestData['debug']) || !empty($_GET['debug']);
 
-            // Record user and assistant exchanges in session
+            // Persist conversation_id in session so browser refresh maintains same conversation
+            if (!empty($conversationId)) {
+                $_SESSION['ask_conversation_id'] = $conversationId;
+            }
+
+            $chatHistory = $_SESSION['ask_history'] ?? [];
+            $result = RagPipeline::ask($query, $chatHistory, null, $conversationId ?: null, $debugMode);
+
+            // Propagate conversation_id back to session (may have been auto-generated)
+            $_SESSION['ask_conversation_id'] = $result['conversation_id'] ?? $conversationId;
+
+            // Record user and assistant exchanges in session (legacy, kept for backward compat)
             $chatHistory[] = [
                 'role'    => 'user',
                 'content' => $query,
@@ -94,7 +106,7 @@ try {
 
             $_SESSION['ask_history'] = $chatHistory;
 
-            echo json_encode([
+            $apiResponse = [
                 'success'          => true,
                 'answer'           => $result['answer'],
                 'grounding_score'  => $result['grounding_score'],
@@ -105,8 +117,30 @@ try {
                 'sources'          => $result['sources'],
                 'retrieval_status' => $result['retrieval_status'],
                 'disclaimer'       => $result['disclaimer'],
+                'conversation_id'  => $result['conversation_id'] ?? '',
+                'intent_type'      => $result['intent_type']      ?? 'STANDALONE',
                 'time'             => date('g:i A')
-            ]);
+            ];
+
+            if ($debugMode && !empty($result['debug'])) {
+                $apiResponse['debug'] = $result['debug'];
+            }
+
+            echo json_encode($apiResponse);
+            break;
+
+        // =====================================================================
+        // Action: New Chat — Reset conversation context
+        // =====================================================================
+        case 'new_chat':
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            require_once __DIR__ . '/../includes/services/ContextService.php';
+            $newConversationId = ContextService::generateUUID();
+            $_SESSION['ask_conversation_id'] = $newConversationId;
+            $_SESSION['ask_history']          = [];
+            echo json_encode(['success' => true, 'conversation_id' => $newConversationId]);
             break;
 
         // =====================================================================
@@ -330,7 +364,8 @@ try {
                     );
                 }
 
-                echo json_encode(['success' => true, 'message' => 'Story summary updated successfully.']);
+                header('Location: ' . APP_URL . '/interview/success.php');
+                exit;
             }
             break;
 
