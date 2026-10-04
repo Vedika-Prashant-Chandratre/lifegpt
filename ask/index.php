@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * LifeGPT - Standalone Ask LifeGPT Chat Window
  */
@@ -14,25 +14,17 @@ require_once __DIR__ . '/../includes/services/RagPipeline.php';
  * Strip common markdown formatting so AI answers display as clean plain text.
  */
 function stripMarkdown(string $text): string {
-    // Remove **bold** and __bold__
     $text = preg_replace('/\*\*(.+?)\*\*/s', '$1', $text);
     $text = preg_replace('/__(.+?)__/s', '$1', $text);
-    // Remove *italic* and _italic_
     $text = preg_replace('/\*(.+?)\*/s', '$1', $text);
     $text = preg_replace('/_(.+?)_/s', '$1', $text);
-    // Remove ### headings
     $text = preg_replace('/^#{1,6}\s*/m', '', $text);
-    // Remove bullet points (- item or * item)
     $text = preg_replace('/^[\-\*]\s+/m', '', $text);
-    // Remove numbered lists (1. item)
     $text = preg_replace('/^\d+\.\s+/m', '', $text);
-    // Remove horizontal rules
     $text = preg_replace('/^[\-\_\*]{3,}$/m', '', $text);
-    // Collapse multiple blank lines
     $text = preg_replace('/\n{3,}/', "\n\n", $text);
     return trim($text);
 }
-
 
 $hideFooter = true;
 $isLoggedIn = Auth::isLoggedIn();
@@ -129,38 +121,37 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Sidebar Header -->
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
                 <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <span style="font-size: 1.6rem;"><span class="notranslate" translate="no">&#127793;</span></span>
                     <strong style="font-size: 1.25rem; color: var(--color-primary);">Ask LifeGPT</strong>
                 </div>
             </div>
 
-                <a href="<?php echo APP_URL; ?>/ask/?action=new_chat" id="newChatBtn" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;" title="Start a fresh conversation — clears conversation memory">
-                    New Chat
-                </a>
-                <p style="font-size:0.72rem; color:var(--color-text-muted); margin:-1rem 0 1rem; text-align:center;">
-                    &#128279; Context-aware &mdash; follow-up questions understood
-                </p>
+            <a href="<?php echo APP_URL; ?>/ask/?action=new_chat" id="newChatBtn" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;" title="Start a fresh conversation — clears conversation memory">
+                New Chat
+            </a>
+            <p style="font-size:0.75rem; color:var(--color-text-muted); margin:-1rem 0 1.25rem; text-align:center;">
+                Context-aware &mdash; follow-up questions understood
+            </p>
 
             <!-- Explore Wisdom Topics -->
             <div style="margin-bottom: 1.25rem;">
                 <h3 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.6rem;"><?php echo $t['ask_topics']; ?></h3>
-                <div style="display: flex; flex-direction: column; gap: 0.3rem;">
-                    <a href="javascript:void(0)" class="topic-q-link" data-question="What career advice do experienced people share about work and success?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
+                <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="What career advice do experienced people share about work and success?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="font-size: 0.87rem; padding: 0.45rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_career']; ?>
                     </a>
-                    <a href="javascript:void(0)" class="topic-q-link" data-question="What have people learned about maintaining healthy family relationships?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="What have people learned about maintaining healthy family relationships?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="font-size: 0.87rem; padding: 0.45rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_family']; ?>
                     </a>
-                    <a href="javascript:void(0)" class="topic-q-link" data-question="How do people successfully navigate major life turning points and changes?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="How do people successfully navigate major life turning points and changes?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="font-size: 0.87rem; padding: 0.45rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_turning']; ?>
                     </a>
-                    <a href="javascript:void(0)" class="topic-q-link" data-question="What wisdom do people share about staying healthy and active as they age?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="What wisdom do people share about staying healthy and active as they age?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="font-size: 0.87rem; padding: 0.45rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_health']; ?>
                     </a>
-                    <a href="javascript:void(0)" class="topic-q-link" data-question="What financial lessons and money advice do experienced people share?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="What financial lessons and money advice do experienced people share?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="font-size: 0.87rem; padding: 0.45rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_money']; ?>
                     </a>
-                    <a href="javascript:void(0)" class="topic-q-link" data-question="What funny life mishaps and humorous stories do people share?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="What funny life mishaps and humorous stories do people share?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="font-size: 0.87rem; padding: 0.45rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_humor']; ?>
                     </a>
                 </div>
@@ -169,7 +160,7 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Common Questions -->
             <div style="margin-bottom: 1rem;">
                 <h3 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.6rem;"><?php echo $t['ask_common_q']; ?></h3>
-                <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                <div style="display: flex; flex-direction: column; gap: 0.35rem;">
                     <?php
                     $commonQs = [
                         [$t['q1'], $t['q1_full']],
@@ -185,8 +176,8 @@ require_once __DIR__ . '/../includes/header.php';
                     ];
                     foreach ($commonQs as $q):
                     ?>
-                    <a href="javascript:void(0)" class="common-q-link" data-question="<?php echo htmlspecialchars($q[1], ENT_QUOTES, 'UTF-8'); ?>"
-                       style="font-size: 0.8rem; padding: 0.4rem 0.65rem; background: var(--color-mint-bg); border-radius: var(--radius-sm); color: var(--color-primary); line-height: 1.45; border-left: 3px solid var(--color-primary); display: block; text-decoration: none; cursor: pointer;">
+                    <a href="javascript:void(0)" class="common-q-link" data-question="<?php echo htmlspecialchars($q[1], ENT_QUOTES, 'UTF-8'); ?>" onclick="window.askQuestion(this.getAttribute('data-question'))"
+                       style="font-size: 0.8rem; padding: 0.45rem 0.7rem; background: var(--color-mint-bg); border-radius: var(--radius-sm); color: var(--color-primary); line-height: 1.45; border-left: 3px solid var(--color-primary); display: block; text-decoration: none; cursor: pointer;">
                         <?php echo htmlspecialchars($q[0]); ?>
                     </a>
                     <?php endforeach; ?>
@@ -198,8 +189,8 @@ require_once __DIR__ . '/../includes/header.php';
         <div style="border-top: 1px solid var(--color-border); padding-top: 1rem;">
             <?php if ($isLoggedIn): ?>
                 <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
-                    <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--color-primary); font-weight: bold;">
-                        <span class="notranslate" translate="no">&#128100;</span>
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 1rem; color: var(--color-primary); font-weight: bold;">
+                        <?php echo strtoupper(substr($user['display_name'] ?? 'M', 0, 1)); ?>
                     </div>
                     <div>
                         <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">
@@ -212,7 +203,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <a href="<?php echo APP_URL; ?>/account/profile.php" style="font-size: 0.85rem; color: var(--color-text-muted);">Settings</a>
                     <a href="<?php echo APP_URL; ?>/account/logout.php" class="btn btn-outline" style="min-height: 34px; padding: 0.25rem 0.75rem; font-size: 0.85rem;">
-                        <span class="notranslate" translate="no">&#128682;</span> Log Out
+                        Log Out
                     </a>
                 </div>
             <?php else: ?>
@@ -222,10 +213,10 @@ require_once __DIR__ . '/../includes/header.php';
                         GUEST SEARCH MODE
                     </span>
                     <p class="text-sm" style="font-size: 0.825rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
-                        No account or login required.
+                        Searching wisdom archive as anonymous guest.
                     </p>
                     <a href="<?php echo APP_URL; ?>/" style="font-size: 0.85rem; color: var(--color-primary); font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
-                        <span class="notranslate" translate="no">&larr;</span> Return to Homepage
+                        &larr; Return to Homepage
                     </a>
                 </div>
             <?php endif; ?>
@@ -236,12 +227,9 @@ require_once __DIR__ . '/../includes/header.php';
     <section class="ask-main-window">
         <!-- Chat Header -->
         <div class="ask-chat-header">
-            <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <span style="font-size: 1.5rem;"><span class="notranslate" translate="no">&#129302;</span></span>
-                <div>
-                    <h2 style="font-size: 1.25rem; margin-bottom: 0;">Ask <span class="notranslate" translate="no">LifeGPT</span> Search</h2>
-                    <span class="text-sm" style="font-size: 0.85rem;">AI-assisted search across contributed stories</span>
-                </div>
+            <div>
+                <h2 style="font-size: 1.25rem; margin-bottom: 0;">Ask LifeGPT Search</h2>
+                <span class="text-sm" style="font-size: 0.85rem;">AI-assisted search across contributed stories</span>
             </div>
             
             <span class="step-badge notranslate" translate="no" style="background: var(--color-mint-bg); color: var(--color-primary); margin: 0;">Searching Contributed Stories</span>
@@ -252,14 +240,13 @@ require_once __DIR__ . '/../includes/header.php';
             <?php if (empty($chatHistory)): ?>
                 <!-- Empty State -->
                 <div style="text-align: center; margin: auto 0; padding: 2rem;">
-                    <div style="width: 72px; height: 72px; background: var(--color-mint-bg); border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 2.4rem; margin-bottom: 1.25rem;"><span class="notranslate" translate="no">&#129302;</span></div>
                     <h2 style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--color-primary);">Ready when you are.</h2>
                     <p class="text-sm" style="max-width: 520px; margin: 0 auto 1.75rem auto; font-size: 1.05rem;">
                         Ask any question to search real life stories, lessons, and practical insights shared by contributors.
                     </p>
 
                     <!-- Example Q&A Showcase Card -->
-                    <div class="card-hover" data-question="What advice do people share about changing careers later in life?" style="max-width: 720px; margin: 0 auto 2rem auto; text-align: left; background: #FFFFFF; border: 1px solid var(--color-border); border-left: 4px solid var(--color-amber); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-subtle); cursor: pointer;" title="Click to search this question">
+                    <div class="card-hover" data-question="What advice do people share about changing careers later in life?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="max-width: 720px; margin: 0 auto 2rem auto; text-align: left; background: #FFFFFF; border: 1px solid var(--color-border); border-left: 4px solid var(--color-amber); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-subtle); cursor: pointer;" title="Click to search this question">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span class="step-badge notranslate" translate="no" style="background: var(--color-amber-light); color: var(--color-amber); font-size: 0.75rem; margin-bottom: 0;">SAMPLE SEARCH</span>
                             <span class="text-sm" style="font-size: 0.8rem;">Click prompt below to search &rarr;</span>
@@ -268,27 +255,27 @@ require_once __DIR__ . '/../includes/header.php';
                             Q: &ldquo;What advice do people share about changing careers later in life?&rdquo; 
                         </div>
                         <p style="font-size: 0.9rem; line-height: 1.55; color: var(--color-text-main); margin-bottom: 0.5rem;">
-                            <span class="notranslate" translate="no">LifeGPT:</span> &ldquo;Contributors emphasize starting with small freelance experiments before quitting, treating decades of problem-solving as your greatest asset, and being comfortable being a beginner again.&rdquo; 
+                            LifeGPT: &ldquo;Contributors emphasize starting with small freelance experiments before quitting, treating decades of problem-solving as your greatest asset, and being comfortable being a beginner again.&rdquo; 
                         </p>
                         <div class="notranslate" translate="no" style="font-size: 0.78rem; color: var(--color-primary); font-weight: 600;">
-                            <span class="notranslate" translate="no">&#128220;</span> AI-assisted search across contributed stories
+                            AI-assisted search across contributed stories
                         </div>
                     </div>
 
                     <!-- 3 Prompt Suggestion Cards -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; max-width: 780px; margin: 0 auto;">
-                        <div class="card card-hover" data-question="What is the best career advice older adults share?" style="cursor: pointer; text-align: left; padding: 1.25rem;">
-                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#128161;</span> Career Guidance</strong>
+                        <div class="card card-hover" data-question="What is the best career advice older adults share?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="cursor: pointer; text-align: left; padding: 1.25rem;">
+                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">Career Guidance</strong>
                             <p class="text-sm" style="margin-bottom: 0;">&ldquo;What is the best career advice older adults share?&rdquo; </p>
                         </div>
 
-                        <div class="card card-hover" data-question="How do people handle major life turning points?" style="cursor: pointer; text-align: left; padding: 1.25rem;">
-                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#127807;</span> Turning Points</strong>
+                        <div class="card card-hover" data-question="How do people handle major life turning points?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="cursor: pointer; text-align: left; padding: 1.25rem;">
+                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">Turning Points</strong>
                             <p class="text-sm" style="margin-bottom: 0;">&ldquo;How do people handle major life turning points?&rdquo; </p>
                         </div>
 
-                        <div class="card card-hover" data-question="What funny mishaps do people laugh about later?" style="cursor: pointer; text-align: left; padding: 1.25rem;">
-                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#127917;</span> Humor & Perspective</strong>
+                        <div class="card card-hover" data-question="What funny mishaps do people laugh about later?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="cursor: pointer; text-align: left; padding: 1.25rem;">
+                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">Humor &amp; Perspective</strong>
                             <p class="text-sm" style="margin-bottom: 0;">&ldquo;What funny mishaps do people laugh about later?&rdquo; </p>
                         </div>
                     </div>
@@ -299,12 +286,12 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php if ($msg['role'] === 'user'): ?>
                         <div class="chat-bubble chat-bubble-user" style="align-self: flex-end; max-width: 75%;">
                             <div class="chat-bubble-meta">You &bull; <span class="notranslate" translate="no"><?php echo $msg['time']; ?></span></div>
-                            <p style="font-size: 1.05rem; line-height: 1.5;" class="<?php echo ($uiLang !== 'en') ? 'notranslate' : ''; ?>" translate="<?php echo ($uiLang !== 'en') ? 'no' : 'yes'; ?>"><?php echo htmlspecialchars($msg['content']); ?></p>
+                            <p style="font-size: 1.05rem; line-height: 1.5; margin: 0;" class="<?php echo ($uiLang !== 'en') ? 'notranslate' : ''; ?>" translate="<?php echo ($uiLang !== 'en') ? 'no' : 'yes'; ?>"><?php echo nl2br(htmlspecialchars($msg['content'])); ?></p>
                         </div>
                     <?php else: ?>
                         <div class="chat-bubble chat-bubble-ai" style="align-self: flex-start; max-width: 85%;">
                             <div class="chat-bubble-meta" style="display: flex; align-items: center; gap: 0.4rem;">
-                                <span><span class="notranslate" translate="no">&#129302;</span></span> <strong class="notranslate" translate="no">LifeGPT Host</strong> &bull; <span class="notranslate" translate="no"><?php echo $msg['time']; ?></span>
+                                <strong class="notranslate" translate="no">LifeGPT Host</strong> &bull; <span class="notranslate" translate="no"><?php echo $msg['time']; ?></span>
                             </div>
                             <p style="font-size: 1.05rem; line-height: 1.6; margin-bottom: 0.75rem;" class="<?php echo ($uiLang !== 'en') ? 'notranslate' : ''; ?>" translate="<?php echo ($uiLang !== 'en') ? 'no' : 'yes'; ?>"><?php echo nl2br(htmlspecialchars($msg['content'])); ?></p>
                             
@@ -320,7 +307,6 @@ require_once __DIR__ . '/../includes/header.php';
                             <div style="margin-top: 0.85rem; padding: 0.85rem 1rem; background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
                                     <div style="display: flex; align-items: center; gap: 0.4rem;">
-                                        <span class="notranslate" translate="no">&#127919;</span>
                                         <strong style="font-size: 0.88rem; color: var(--color-primary);"><span class="notranslate" translate="no">LifeGPT</span> Grounding Score:</strong>
                                         <span class="notranslate" translate="no" style="font-size: 0.82rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 999px; background: <?php echo htmlspecialchars($confBadge); ?>; color: <?php echo htmlspecialchars($confColor); ?>;">
                                             <?php echo $groundingScore; ?>% &bull; <?php echo htmlspecialchars($confLabel); ?>
@@ -365,7 +351,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <?php endif; ?>
 
                             <div class="citation-tag notranslate" translate="no">
-                                <span class="notranslate" translate="no">&#128220;</span> AI-assisted search across contributed stories
+                                AI-assisted search across contributed stories
                             </div>
 
                         </div>
@@ -379,14 +365,11 @@ require_once __DIR__ . '/../includes/header.php';
             <form action="" method="POST" id="askForm" class="ask-form">
                 <?php echo CSRF::getInput(); ?>
                 <div class="ask-input-row">
-                    <button type="button" class="btn btn-outline ask-voice-btn" title="Voice Search" aria-label="Voice Search">
-                        <span class="notranslate" translate="no">&#127897;&#65039;</span>
-                    </button>
                     <input type="text" name="query" id="askQueryInput" class="form-control" placeholder="Ask LifeGPT anything (e.g., How to navigate career change?)" required>
                 </div>
                 <button type="submit" class="btn btn-primary ask-submit-btn">
-                    <span class="ask-btn-desktop">Send <span class="notranslate" translate="no">&rarr;</span></span>
-                    <span class="ask-btn-mobile">Ask Question <span class="notranslate" translate="no">&rarr;</span></span>
+                    <span class="ask-btn-desktop">Send &rarr;</span>
+                    <span class="ask-btn-mobile">Ask Question &rarr;</span>
                 </button>
             </form>
         </div>

@@ -111,18 +111,29 @@ require_once __DIR__ . '/../includes/header.php';
         
         <?php if (!empty($success)): ?>
             <div class="alert alert-success" style="padding: 1.25rem; border-radius: var(--radius-md); background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46;">
-                <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
-                    <span style="font-size: 1.5rem; line-height: 1;">&#9993;</span>
-                    <div>
-                        <strong style="display: block; font-size: 1.05rem; margin-bottom: 0.35rem; color: #064e3b;">Email Sent Successfully</strong>
-                        <p style="margin: 0; font-size: 0.95rem; line-height: 1.5;">
-                            A password reset link has been dispatched to <strong><?php echo htmlspecialchars($sentEmail); ?></strong>. Please check your inbox (and spam/junk folder) and click the link to reset your password.
-                        </p>
-                    </div>
+                <div>
+                    <strong style="display: block; font-size: 1.05rem; margin-bottom: 0.35rem; color: #064e3b;">Email Dispatched</strong>
+                    <p style="margin: 0; font-size: 0.95rem; line-height: 1.5;">
+                        A password reset link has been dispatched to <strong><?php echo htmlspecialchars($sentEmail); ?></strong>. Please check your inbox (and spam/junk folder) to reset your password.
+                    </p>
                 </div>
             </div>
 
-            <div style="text-align: center; margin-top: 2rem;">
+            <?php if (!empty($resetLink) && (APP_ENV === 'local' || APP_ENV === 'development')): ?>
+            <div style="margin-top: 1.5rem; padding: 1rem 1.25rem; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: left;">
+                <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.35rem;">
+                    Local Testing Link (XAMPP Environment)
+                </span>
+                <p style="font-size: 0.85rem; color: #475569; margin-bottom: 0.75rem; line-height: 1.45;">
+                    If your local XAMPP does not have an active external SMTP relay configured, you can use this direct link to complete testing:
+                </p>
+                <a href="<?php echo $resetLink; ?>" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.4rem 0.85rem; width: 100%; justify-content: center; word-break: break-all;">
+                    Open Reset Password Page &rarr;
+                </a>
+            </div>
+            <?php endif; ?>
+
+            <div style="text-align: center; margin-top: 1.5rem;">
                 <a href="<?php echo APP_URL; ?>/account/login.php" class="btn btn-primary" style="width: 100%;">Return to Sign In</a>
             </div>
         <?php else: ?>

@@ -90,7 +90,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
     <div id="google_translate_element" style="display:none;"></div>
 
     <!-- Bottom-Right Floating Avatar Widget -->
-    <div class="floating-avatar-widget notranslate" translate="no" onclick="openHowItWorksModal()" title="How LifeGPT Works (Onboarding Guide)">&#129302;</div>
+    <div class="floating-avatar-widget notranslate" translate="no" onclick="openHowItWorksModal()" title="How LifeGPT Works (Onboarding Guide)">?</div>
 
     <!-- 4-Step Centered Onboarding Modal Overlay ("How LifeGPT Works") -->
     <div id="howItWorksModal" class="modal-overlay" aria-hidden="true">
@@ -103,7 +103,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
             <!-- Step 1: Welcome & Mission -->
             <div id="modalStep1" class="modal-step-body">
                 <span class="step-badge notranslate" translate="no">STEP 1 OF 4 &mdash; WELCOME</span>
-                <div class="notranslate" translate="no" style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.25rem;">&#127793;</div>
+                <div class="notranslate" translate="no" style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: var(--color-primary); margin-bottom: 1.25rem;">1</div>
                 <h3 style="font-size: 1.45rem; margin-bottom: 0.5rem;">Your Life Experience Matters</h3>
                 <p class="text-sm">Every lesson you've learned, obstacle you've overcome, or story that makes you laugh holds immense value. LifeGPT collects real human wisdom to help others navigating similar paths.</p>
             </div>
@@ -111,7 +111,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
             <!-- Step 2: Talk or Type -->
             <div id="modalStep2" class="modal-step-body" style="display: none;">
                 <span class="step-badge notranslate" translate="no">STEP 2 OF 4 &mdash; STORYTELLING</span>
-                <div class="notranslate" translate="no" style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.25rem;">&#127897;&#65039;</div>
+                <div class="notranslate" translate="no" style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: var(--color-primary); margin-bottom: 1.25rem;">2</div>
                 <h3 style="font-size: 1.45rem; margin-bottom: 0.5rem;">Talk or Type at Your Own Pace</h3>
                 <p class="text-sm">Choose from customized AI host personas like a Curious Grandchild or Journalist. Speak your answers aloud using voice recognition or type them in. Review and edit your responses anytime.</p>
                 <div style="background: var(--color-bg-base); border-left: 3px solid var(--color-primary); padding: 0.6rem 0.85rem; border-radius: 6px; margin-top: 0.75rem; font-size: 0.85rem; color: var(--color-text-main);">
@@ -122,7 +122,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
             <!-- Step 3: Privacy & Control -->
             <div id="modalStep3" class="modal-step-body" style="display: none;">
                 <span class="step-badge notranslate" translate="no">STEP 3 OF 4 &mdash; PRIVACY</span>
-                <div class="notranslate" translate="no" style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.25rem;">&#128274;</div>
+                <div class="notranslate" translate="no" style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: var(--color-primary); margin-bottom: 1.25rem;">3</div>
                 <h3 style="font-size: 1.45rem; margin-bottom: 0.5rem;">You Are in Complete Control</h3>
                 <p class="text-sm">No account is required. You may participate without displaying your name. Please avoid sharing information that could identify you or someone else. Review and edit everything before sharing, or sign in to save your private archive.</p>
             </div>
@@ -130,7 +130,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
             <!-- Step 4: Ready to Inspire -->
             <div id="modalStep4" class="modal-step-body" style="display: none;">
                 <span class="step-badge notranslate" translate="no">STEP 4 OF 4 &mdash; GET STARTED</span>
-                <div class="notranslate" translate="no" style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.25rem;">&#127881;</div>
+                <div class="notranslate" translate="no" style="width: 60px; height: 60px; border-radius: 16px; background-color: var(--color-mint-bg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: var(--color-primary); margin-bottom: 1.25rem;">4</div>
                 <h3 style="font-size: 1.45rem; margin-bottom: 0.5rem;">Ready to Inspire Someone?</h3>
                 <p class="text-sm">Your contributed insights join a growing library of real-life stories that guide students, career switchers, and seekers.</p>
             </div>
@@ -214,7 +214,7 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
             backBtn.disabled = (currentModalStep === 1);
 
             if (currentModalStep === 4) {
-                nextBtn.innerHTML = '<span class="notranslate" translate="no">&#128640;</span> Start My Story';
+                nextBtn.innerHTML = 'Start My Story &rarr;';
             } else {
                 nextBtn.innerHTML = 'Next Step <span class="notranslate" translate="no">&rarr;</span>';
             }
