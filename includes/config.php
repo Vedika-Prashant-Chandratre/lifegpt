@@ -87,6 +87,11 @@ define('SHOW_GROUNDING_SCORE', filter_var(config('SHOW_GROUNDING_SCORE', 'true')
 // Mail settings
 define('MAIL_FROM_NAME', config('MAIL_FROM_NAME', 'LifeGPT'));
 define('MAIL_FROM_ADDRESS', config('MAIL_FROM_ADDRESS', 'noreply@lifegpt.local'));
+define('SMTP_HOST', config('SMTP_HOST', 'localhost'));
+define('SMTP_PORT', (int)config('SMTP_PORT', 25));
+define('SMTP_USER', config('SMTP_USER', ''));
+define('SMTP_PASS', config('SMTP_PASS', ''));
+require_once __DIR__ . '/services/MailService.php';
 
 // Set error reporting based on APP_ENV
 if (APP_ENV === 'local' || APP_ENV === 'development') {

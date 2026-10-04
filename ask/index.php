@@ -105,6 +105,22 @@ $pageTitle = "Ask LifeGPT &mdash; Collective Wisdom Search";
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
+<style>
+.common-q-link, .topic-q-link {
+    transition: all 0.18s ease-in-out;
+}
+.common-q-link:hover {
+    background: #d1fae5 !important;
+    transform: translateX(3px);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.topic-q-link:hover {
+    background: var(--color-mint-bg) !important;
+    color: var(--color-primary) !important;
+    transform: translateX(3px);
+}
+</style>
+
 <div class="ask-layout">
     
     <!-- Left Sidebar (280px) -->
@@ -118,33 +134,33 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             </div>
 
-                <button type="button" id="newChatBtn" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; cursor: pointer;" title="Start a fresh conversation — clears conversation memory">
+                <a href="<?php echo APP_URL; ?>/ask/?action=new_chat" id="newChatBtn" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;" title="Start a fresh conversation — clears conversation memory">
                     New Chat
-                </button>
+                </a>
                 <p style="font-size:0.72rem; color:var(--color-text-muted); margin:-1rem 0 1rem; text-align:center;">
                     &#128279; Context-aware &mdash; follow-up questions understood
                 </p>
 
-                        <!-- Explore Wisdom Topics -->
+            <!-- Explore Wisdom Topics -->
             <div style="margin-bottom: 1.25rem;">
                 <h3 style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted); margin-bottom: 0.6rem;"><?php echo $t['ask_topics']; ?></h3>
                 <div style="display: flex; flex-direction: column; gap: 0.3rem;">
-                    <a href="javascript:void(0)" onclick="askQuestion('What career advice do experienced people share about work and success?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="What career advice do experienced people share about work and success?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_career']; ?>
                     </a>
-                    <a href="javascript:void(0)" onclick="askQuestion('What have people learned about maintaining healthy family relationships?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="What have people learned about maintaining healthy family relationships?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_family']; ?>
                     </a>
-                    <a href="javascript:void(0)" onclick="askQuestion('How do people successfully navigate major life turning points and changes?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="How do people successfully navigate major life turning points and changes?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_turning']; ?>
                     </a>
-                    <a href="javascript:void(0)" onclick="askQuestion('What wisdom do people share about staying healthy and active as they age?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="What wisdom do people share about staying healthy and active as they age?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_health']; ?>
                     </a>
-                    <a href="javascript:void(0)" onclick="askQuestion('What financial lessons and money advice do experienced people share?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="What financial lessons and money advice do experienced people share?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_money']; ?>
                     </a>
-                    <a href="javascript:void(0)" onclick="askQuestion('What funny life mishaps and humorous stories do people share?')" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main);">
+                    <a href="javascript:void(0)" class="topic-q-link" data-question="What funny life mishaps and humorous stories do people share?" style="font-size: 0.87rem; padding: 0.4rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_humor']; ?>
                     </a>
                 </div>
@@ -169,8 +185,8 @@ require_once __DIR__ . '/../includes/header.php';
                     ];
                     foreach ($commonQs as $q):
                     ?>
-                    <a href="javascript:void(0)" onclick="askQuestion(<?php echo json_encode($q[1]); ?>)"
-                       style="font-size: 0.8rem; padding: 0.4rem 0.65rem; background: var(--color-mint-bg); border-radius: var(--radius-sm); color: var(--color-primary); line-height: 1.45; border-left: 3px solid var(--color-primary); display: block;">
+                    <a href="javascript:void(0)" class="common-q-link" data-question="<?php echo htmlspecialchars($q[1], ENT_QUOTES, 'UTF-8'); ?>"
+                       style="font-size: 0.8rem; padding: 0.4rem 0.65rem; background: var(--color-mint-bg); border-radius: var(--radius-sm); color: var(--color-primary); line-height: 1.45; border-left: 3px solid var(--color-primary); display: block; text-decoration: none; cursor: pointer;">
                         <?php echo htmlspecialchars($q[0]); ?>
                     </a>
                     <?php endforeach; ?>
@@ -243,10 +259,10 @@ require_once __DIR__ . '/../includes/header.php';
                     </p>
 
                     <!-- Example Q&A Showcase Card -->
-                    <div style="max-width: 720px; margin: 0 auto 2rem auto; text-align: left; background: #FFFFFF; border: 1px solid var(--color-border); border-left: 4px solid var(--color-amber); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-subtle);">
+                    <div class="card-hover" data-question="What advice do people share about changing careers later in life?" style="max-width: 720px; margin: 0 auto 2rem auto; text-align: left; background: #FFFFFF; border: 1px solid var(--color-border); border-left: 4px solid var(--color-amber); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-subtle); cursor: pointer;" title="Click to search this question">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span class="step-badge notranslate" translate="no" style="background: var(--color-amber-light); color: var(--color-amber); font-size: 0.75rem; margin-bottom: 0;">SAMPLE SEARCH</span>
-                            <span class="text-sm" style="font-size: 0.8rem;">Click prompt below to search</span>
+                            <span class="text-sm" style="font-size: 0.8rem;">Click prompt below to search &rarr;</span>
                         </div>
                         <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-primary); margin-bottom: 0.35rem;">
                             Q: &ldquo;What advice do people share about changing careers later in life?&rdquo; 
@@ -261,19 +277,19 @@ require_once __DIR__ . '/../includes/header.php';
 
                     <!-- 3 Prompt Suggestion Cards -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; max-width: 780px; margin: 0 auto;">
-                        <div class="card card-hover" onclick="askQuestion('What is the best career advice older adults share?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
+                        <div class="card card-hover" data-question="What is the best career advice older adults share?" style="cursor: pointer; text-align: left; padding: 1.25rem;">
                             <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#128161;</span> Career Guidance</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;What is the best career advice older adults share?&rdquo;</p>
+                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;What is the best career advice older adults share?&rdquo; </p>
                         </div>
 
-                        <div class="card card-hover" onclick="askQuestion('How do people handle major life turning points?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
+                        <div class="card card-hover" data-question="How do people handle major life turning points?" style="cursor: pointer; text-align: left; padding: 1.25rem;">
                             <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#127807;</span> Turning Points</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;How do people handle major life turning points?&rdquo;</p>
+                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;How do people handle major life turning points?&rdquo; </p>
                         </div>
 
-                        <div class="card card-hover" onclick="askQuestion('What funny mishaps do people laugh about later?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
+                        <div class="card card-hover" data-question="What funny mishaps do people laugh about later?" style="cursor: pointer; text-align: left; padding: 1.25rem;">
                             <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#127917;</span> Humor & Perspective</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;What funny mishaps do people laugh about later?&rdquo;</p>
+                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;What funny mishaps do people laugh about later?&rdquo; </p>
                         </div>
                     </div>
                 </div>

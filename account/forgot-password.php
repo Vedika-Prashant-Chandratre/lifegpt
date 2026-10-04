@@ -1,7 +1,7 @@
 <?php
 /**
  * LifeGPT - Forgot Password Request
- * Sends a real password reset email using PHP mail().
+ * Sends password reset link to user's email address via MailService.
  */
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/auth.php';
@@ -9,6 +9,7 @@ require_once __DIR__ . '/../includes/csrf.php';
 
 $error = '';
 $success = '';
+$sentEmail = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     CSRF::validateRequest();
@@ -17,6 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (empty($email)) {
         $error = 'Please enter your email address.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Please enter a valid email address.';
     } else {
         $user = DB::fetch("SELECT user_id, display_name FROM lg_users WHERE email = :email", ['email' => $email]);
         
@@ -37,57 +40,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 
                 $resetLink = APP_URL . "/account/reset-password.php?token=" . $token;
-                $displayName = $user['display_name'] ?? 'Member';
+                $displayName = htmlspecialchars($user['display_name'] ?? 'Member');
                 
-                // Send the actual email
-                $to = $email;
-                $subject = "LifeGPT — Password Reset Request";
+                // Construct branded HTML email
+                $subject = "LifeGPT — Password Reset Link";
                 $htmlBody = "
+                <!DOCTYPE html>
                 <html>
-                <head><title>Password Reset</title></head>
-                <body style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; background: #f1f5f9; padding: 40px 20px;'>
-                    <div style='max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);'>
-                        <h2 style='color: #064e3b; margin-bottom: 8px;'>Password Reset Request</h2>
-                        <p style='color: #475569; font-size: 15px; line-height: 1.6;'>
-                            Hi <strong>{$displayName}</strong>,<br><br>
-                            We received a request to reset your LifeGPT password. Click the button below to set a new password. This link will expire in 1 hour.
-                        </p>
-                        <div style='text-align: center; margin: 30px 0;'>
-                            <a href='{$resetLink}' style='display: inline-block; background: #064e3b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;'>Reset My Password</a>
+                <head>
+                    <meta charset='UTF-8'>
+                    <title>Password Reset</title>
+                </head>
+                <body style='margin:0; padding:40px 20px; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; background-color: #f1f5f9; color: #1e293b;'>
+                    <div style='max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 14px; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border-top: 5px solid #064e3b;'>
+                        <div style='margin-bottom: 24px;'>
+                            <h2 style='color: #064e3b; margin: 0 0 8px 0; font-size: 24px;'>Reset Your Password</h2>
+                            <p style='color: #64748b; font-size: 14px; margin: 0;'>LifeGPT Wisdom Archive Account</p>
                         </div>
-                        <p style='color: #94a3b8; font-size: 13px; line-height: 1.5;'>
-                            If the button doesn't work, copy and paste this link into your browser:<br>
+                        <p style='font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 20px;'>
+                            Hello <strong>{$displayName}</strong>,<br><br>
+                            We received a request to reset the password associated with this email address. Click the button below to choose a new password. This link is valid for <strong>1 hour</strong>.
+                        </p>
+                        <div style='text-align: center; margin: 32px 0;'>
+                            <a href='{$resetLink}' style='display: inline-block; background-color: #064e3b; color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 4px rgba(6,78,59,0.2);'>Reset Password</a>
+                        </div>
+                        <p style='color: #64748b; font-size: 13px; line-height: 1.5; margin-bottom: 24px;'>
+                            If the button above does not work, copy and paste this URL into your web browser:<br>
                             <a href='{$resetLink}' style='color: #064e3b; word-break: break-all;'>{$resetLink}</a>
                         </p>
-                        <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;'>
-                        <p style='color: #94a3b8; font-size: 12px;'>
-                            If you did not request this reset, you can safely ignore this email. Your password will remain unchanged.<br><br>
-                            &mdash; The LifeGPT Team (A FiftyIsNifty research initiative)
+                        <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 28px 0;'>
+                        <p style='color: #94a3b8; font-size: 12px; line-height: 1.5; margin: 0;'>
+                            If you did not request a password reset, you can safely disregard this email. Your password will remain unchanged.<br><br>
+                            &mdash; <strong>LifeGPT</strong> &bull; A FiftyIsNifty research initiative
                         </p>
                     </div>
                 </body>
                 </html>";
-                
-                $headers  = "MIME-Version: 1.0\r\n";
-                $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-                $headers .= "From: " . (defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'LifeGPT') . " <" . (defined('MAIL_FROM_ADDRESS') ? MAIL_FROM_ADDRESS : 'noreply@lifegpt.local') . ">\r\n";
-                $headers .= "Reply-To: noreply@lifegpt.local\r\n";
-                
-                $mailSent = @mail($to, $subject, $htmlBody, $headers);
-                
-                if ($mailSent) {
-                    $success = "A password reset link has been sent to your email address. Please check your inbox (and spam folder).";
-                } else {
-                    // Fallback: show the link directly for local/dev environments
-                    $success = "EMAIL_FALLBACK";
-                }
+
+                // Dispatch email via MailService
+                MailService::send($email, $subject, $htmlBody);
+                $sentEmail = $email;
+                $success = "A password reset link has been sent to your email address.";
                 
             } catch (Exception $e) {
                 error_log("Failed to insert password reset: " . $e->getMessage());
                 $error = 'A system error occurred. Please try again later.';
             }
         } else {
-            // Don't disclose whether the email exists
+            // Consistent response for privacy
+            $sentEmail = $email;
             $success = "If an account with that email exists, a password reset link has been sent.";
         }
     }
@@ -98,9 +99,9 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div style="max-width: 500px; margin: 3rem auto;">
-    <div class="card">
-        <h1 style="font-size: 2rem; margin-bottom: 1rem; text-align: center;">Reset Password</h1>
-        <p class="text-sm" style="text-align: center; margin-bottom: 2rem;">Enter your account email below, and we will send you a link to set a new password.</p>
+    <div class="card" style="border-top: 5px solid var(--color-primary); padding: 2.25rem;">
+        <h1 style="font-size: 2rem; margin-bottom: 0.75rem; text-align: center; color: var(--color-primary);">Reset Password</h1>
+        <p class="text-sm" style="text-align: center; margin-bottom: 2rem; color: var(--color-text-muted);">Enter your account email below and we will send a password reset link directly to your inbox.</p>
         
         <?php if (!empty($error)): ?>
             <div class="alert alert-danger">
@@ -108,43 +109,38 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         <?php endif; ?>
         
-        <?php if (!empty($success) && $success !== 'EMAIL_FALLBACK'): ?>
-            <div class="alert alert-success">
-                <p><?php echo htmlspecialchars($success); ?></p>
-            </div>
-            <p style="text-align: center; margin-top: 1.5rem;">
-                <a href="<?php echo APP_URL; ?>/account/login.php" class="btn btn-primary" style="width: 100%;">Back to Login</a>
-            </p>
-        <?php elseif ($success === 'EMAIL_FALLBACK'): ?>
-            <div class="alert alert-success" style="flex-direction: column; align-items: stretch;">
-                <p>A password reset has been generated. Email delivery is not configured on this server, so please use the link below:</p>
-                <?php
-                // Reconstruct the link from the token we just created
-                $resetLink = APP_URL . "/account/reset-password.php?token=" . $token;
-                ?>
-                <div style="margin-top: 1rem; padding: 1rem; background: #ffffff; border-radius: 6px; border: 1px solid #bbf7d0;">
-                    <p style="font-size: 0.9rem; font-weight: bold; margin-bottom: 0.5rem; color: #166534;">Your Password Reset Link:</p>
-                    <a href="<?php echo $resetLink; ?>" style="word-break: break-all; font-size: 0.95rem; font-weight: 600; text-decoration: underline; color: #15803d;">
-                        <?php echo $resetLink; ?>
-                    </a>
+        <?php if (!empty($success)): ?>
+            <div class="alert alert-success" style="padding: 1.25rem; border-radius: var(--radius-md); background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46;">
+                <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                    <span style="font-size: 1.5rem; line-height: 1;">&#9993;</span>
+                    <div>
+                        <strong style="display: block; font-size: 1.05rem; margin-bottom: 0.35rem; color: #064e3b;">Email Sent Successfully</strong>
+                        <p style="margin: 0; font-size: 0.95rem; line-height: 1.5;">
+                            A password reset link has been dispatched to <strong><?php echo htmlspecialchars($sentEmail); ?></strong>. Please check your inbox (and spam/junk folder) and click the link to reset your password.
+                        </p>
+                    </div>
                 </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 2rem;">
+                <a href="<?php echo APP_URL; ?>/account/login.php" class="btn btn-primary" style="width: 100%;">Return to Sign In</a>
             </div>
         <?php else: ?>
             <form action="" method="POST">
                 <?php echo CSRF::getInput(); ?>
                 
                 <div class="form-group">
-                    <label for="email" class="form-label">Email Address</label>
-                    <input type="email" id="email" name="email" class="form-control" placeholder="name@example.com" required>
+                    <label for="email" class="form-label">Account Email Address</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="name@example.com" required autofocus>
                 </div>
                 
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">Send Reset Link</button>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">Send Reset Link to Email</button>
             </form>
+            
+            <p style="text-align: center; margin-top: 2rem; font-size: 0.95rem;">
+                Remembered your password? <a href="<?php echo APP_URL; ?>/account/login.php" style="color: var(--color-primary); font-weight: 600;">Sign In</a>
+            </p>
         <?php endif; ?>
-        
-        <p style="text-align: center; margin-top: 2rem; font-size: 1.05rem;">
-            Remembered your password? <a href="<?php echo APP_URL; ?>/account/login.php">Sign In</a>
-        </p>
     </div>
 </div>
 

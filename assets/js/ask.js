@@ -362,56 +362,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Expose global askQuestion helper (for suggestions, chips, cards)
     window.askQuestion = function(q) {
+        if (!q) return;
+        const queryText = String(q).trim();
+        if (!queryText) return;
         if (askQueryInput) {
-            askQueryInput.value = q;
+            askQueryInput.value = queryText;
         }
-        executeAsk(q);
+        executeAsk(queryText);
     };
 
-    // --- New Chat button ---
-    function updateNewChatButton(hasHistory) {
-        const btn = document.getElementById('newChatBtn');
-        if (!btn) return;
-        // Always keep button fully visible and clickable
-    }
+    // Global click listener for any element with data-question (topics, common questions, suggestion cards)
+    document.addEventListener('click', function(e) {
+        const trigger = e.target.closest('[data-question]');
+        if (trigger) {
+            e.preventDefault();
+            const question = trigger.getAttribute('data-question');
+            if (question) {
+                window.askQuestion(question);
+            }
+        }
+    });
 
+    // --- New Chat button ---
     const newChatBtn = document.getElementById('newChatBtn');
     if (newChatBtn) {
-        newChatBtn.addEventListener('click', async function() {
-            const csrf = getCsrfToken();
-            try {
-                const res = await fetch(`${appUrl}/api/index.php?action=new_chat`, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-Token': csrf
-                    },
-                    body: JSON.stringify({ csrf_token: csrf })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    activeConversationId = data.conversation_id;
-                    sessionStorage.setItem('lifegpt_conversation_id', activeConversationId);
-                }
-            } catch(e) {
-                console.error('New Chat error:', e);
-                // Even if server call fails, reset locally
-            }
-            // Always clear the UI regardless of server response
-            activeConversationId = '';
+        newChatBtn.addEventListener('click', function(e) {
             sessionStorage.removeItem('lifegpt_conversation_id');
-            if (chatContainer) {
-                chatContainer.innerHTML = `
-                    <div style="text-align:center; padding:2rem; color:var(--color-text-muted); font-style:italic; font-size:0.95rem;">
-                        New conversation started. Ask LifeGPT anything.
-                    </div>
-                `;
-            }
-            if (askQueryInput) {
-                askQueryInput.value = '';
-                askQueryInput.focus();
+            // If the element is a link to ?action=new_chat, allow native navigation
+            const href = newChatBtn.getAttribute('href');
+            if (!href || href === '#' || href === 'javascript:void(0)') {
+                e.preventDefault();
+                window.location.href = `${appUrl}/ask/?action=new_chat`;
             }
         });
     }
