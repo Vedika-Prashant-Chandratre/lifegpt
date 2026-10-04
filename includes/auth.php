@@ -66,6 +66,18 @@ class Auth {
         if (strlen($password) < 8) {
             return ['success' => false, 'error' => 'Password must be at least 8 characters long.'];
         }
+        if (!preg_match('/[A-Z]/', $password)) {
+            return ['success' => false, 'error' => 'Password must contain at least one uppercase letter.'];
+        }
+        if (!preg_match('/[a-z]/', $password)) {
+            return ['success' => false, 'error' => 'Password must contain at least one lowercase letter.'];
+        }
+        if (!preg_match('/[0-9]/', $password)) {
+            return ['success' => false, 'error' => 'Password must contain at least one number.'];
+        }
+        if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+            return ['success' => false, 'error' => 'Password must contain at least one special character (e.g. @, #, $, !).'];
+        }
 
         // Check if email already exists
         $existing = DB::fetch("SELECT user_id FROM lg_users WHERE email = :email", ['email' => $email]);

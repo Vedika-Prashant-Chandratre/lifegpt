@@ -74,6 +74,9 @@ if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME'])
                     <a href="<?php echo APP_URL; ?>/dashboard/" class="btn btn-secondary" style="min-height: 40px; padding: 0.35rem 1.25rem; font-size: 0.9rem;">
                         <?php echo $t['nav_dashboard'] ?? 'Dashboard'; ?>
                     </a>
+                    <a href="<?php echo APP_URL; ?>/account/logout.php" class="nav-link" style="color: var(--color-text-muted); font-size: 0.88rem; font-weight: 500;" title="Sign out of your account">
+                        Log Out
+                    </a>
                 <?php else: ?>
                     <a href="<?php echo APP_URL; ?>/account/login.php" class="btn btn-secondary" style="min-height: 40px; padding: 0.35rem 1.25rem; font-size: 0.9rem;">
                         <?php echo $t['nav_signin'] ?? 'Sign In'; ?>
