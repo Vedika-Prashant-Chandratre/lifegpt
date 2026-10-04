@@ -372,10 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateNewChatButton(hasHistory) {
         const btn = document.getElementById('newChatBtn');
         if (!btn) return;
-        if (hasHistory) {
-            btn.style.opacity = '1';
-            btn.style.pointerEvents = 'auto';
-        }
+        // Always keep button fully visible and clickable
     }
 
     const newChatBtn = document.getElementById('newChatBtn');
@@ -397,18 +394,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     activeConversationId = data.conversation_id;
                     sessionStorage.setItem('lifegpt_conversation_id', activeConversationId);
-                    // Clear chat UI
-                    if (chatContainer) {
-                        chatContainer.innerHTML = `
-                            <div style="text-align:center; padding:2rem; color:var(--color-text-muted); font-style:italic; font-size:0.95rem;">
-                                &#128257; New conversation started. Ask LifeGPT anything.
-                            </div>
-                        `;
-                    }
-                    updateNewChatButton(false);
                 }
             } catch(e) {
                 console.error('New Chat error:', e);
+                // Even if server call fails, reset locally
+            }
+            // Always clear the UI regardless of server response
+            activeConversationId = '';
+            sessionStorage.removeItem('lifegpt_conversation_id');
+            if (chatContainer) {
+                chatContainer.innerHTML = `
+                    <div style="text-align:center; padding:2rem; color:var(--color-text-muted); font-style:italic; font-size:0.95rem;">
+                        New conversation started. Ask LifeGPT anything.
+                    </div>
+                `;
+            }
+            if (askQueryInput) {
+                askQueryInput.value = '';
+                askQueryInput.focus();
             }
         });
     }

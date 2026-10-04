@@ -118,14 +118,12 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             </div>
 
-            <?php if ($isLoggedIn): ?>
-                <button type="button" id="newChatBtn" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; opacity: 0.65; cursor: pointer;" title="Start a fresh conversation — clears conversation memory">
+                <button type="button" id="newChatBtn" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; cursor: pointer;" title="Start a fresh conversation — clears conversation memory">
                     New Chat
                 </button>
                 <p style="font-size:0.72rem; color:var(--color-text-muted); margin:-1rem 0 1rem; text-align:center;">
                     &#128279; Context-aware &mdash; follow-up questions understood
                 </p>
-            <?php endif; ?>
 
                         <!-- Explore Wisdom Topics -->
             <div style="margin-bottom: 1.25rem;">
