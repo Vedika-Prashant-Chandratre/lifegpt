@@ -265,17 +265,17 @@ require_once __DIR__ . '/../includes/header.php';
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; max-width: 780px; margin: 0 auto;">
                         <div class="card card-hover" onclick="askQuestion('What is the best career advice older adults share?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
                             <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#128161;</span> Career Guidance</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;What is the best career advice older adults share?&rdquo;</p>
+                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;What is the best career advice older adults share?&rdquo;</p>
                         </div>
 
                         <div class="card card-hover" onclick="askQuestion('How do people handle major life turning points?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
                             <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#127807;</span> Turning Points</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;How do people handle major life turning points?&rdquo;</p>
+                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;How do people handle major life turning points?&rdquo;</p>
                         </div>
 
                         <div class="card card-hover" onclick="askQuestion('What funny mishaps do people laugh about later?')" style="cursor: pointer; text-align: left; padding: 1.25rem;">
                             <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;"><span class="notranslate" translate="no">&#127917;</span> Humor & Perspective</strong>
-                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;What funny mishaps do people laugh about later?&rdquo;</p>
+                            <p class="text-sm" style="margin-bottom: 0;">&ldquo;What funny mishaps do people laugh about later?&rdquo;</p>
                         </div>
                     </div>
                 </div>
