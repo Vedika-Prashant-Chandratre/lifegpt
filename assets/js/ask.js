@@ -1,26 +1,21 @@
 /**
- * LifeGPT - Asynchronous Ask Search Controller
- * Handles real-time question submissions, animated thinking indicator,
- * dynamic bubble injection, Grounding Score badges, and sources drawer.
+ * LifeGPT - Standalone Ask LifeGPT Chat JavaScript
+ * Handles AJAX chat message dispatching, RAG grounding score visualization,
+ * session context tracking, and question trigger clicks.
  */
-
 document.addEventListener('DOMContentLoaded', function() {
-    const askForm = document.getElementById('askForm');
-    const askQueryInput = document.getElementById('askQueryInput');
-    const chatContainer = document.getElementById('askChatContainer');
-    const submitBtn = askForm ? askForm.querySelector('.ask-submit-btn') : null;
     const config = window.LifeGPTConfig || {};
     const appUrl = config.appUrl || '';
+    const showGroundingScore = config.showGroundingScore !== false;
+    const chatContainer = document.getElementById('askChatContainer');
+    const askForm = document.getElementById('askForm');
+    const askQueryInput = document.getElementById('askQueryInput');
+    const submitBtn = askForm ? askForm.querySelector('button[type="submit"]') : null;
 
-    // --- Context-aware conversation state ---
-    let activeConversationId = config.conversationId || sessionStorage.getItem('lifegpt_conversation_id') || '';
-    let debugModeEnabled = false; // toggled via ?debug=1 in URL or dev button
-    const showGroundingScore = config.showGroundingScore !== false; // default true; controlled by SHOW_GROUNDING_SCORE env
-
-    // Check URL for debug mode
-    if (new URLSearchParams(window.location.search).get('debug') === '1') {
-        debugModeEnabled = true;
-    }
+    // Track active conversation UUID
+    let activeConversationId = '';
+    const urlParams = new URLSearchParams(window.location.search);
+    const debugModeEnabled = urlParams.get('debug') === '1';
 
     function getCsrfToken() {
         const tokenInput = document.querySelector('input[name="csrf_token"]');
@@ -34,8 +29,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
         hours = hours ? hours : 12;
-        const minsStr = minutes < 10 ? '0' + minutes : minutes;
-        return `${hours}:${minsStr} ${ampm}`;
+        const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+        return `${hours}:${minutesStr} ${ampm}`;
     }
 
     function escapeHtml(str) {
@@ -50,37 +45,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function scrollToBottom() {
         if (chatContainer) {
-            chatContainer.scrollTo({
-                top: chatContainer.scrollHeight,
-                behavior: 'smooth'
-            });
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
     }
 
     function removeEmptyStateIfPresent() {
         if (!chatContainer) return;
-        const emptyState = chatContainer.querySelector('div[style*="max-width: 680px"]');
-        if (emptyState) {
+        const emptyState = chatContainer.querySelector('div[style*="text-align: center"]');
+        if (emptyState && !chatContainer.querySelector('.chat-bubble')) {
             emptyState.remove();
         }
     }
 
-    function renderUserBubble(text, timeStr) {
+    function renderUserBubble(query, timeStr) {
+        if (!chatContainer) return;
         const bubble = document.createElement('div');
         bubble.className = 'chat-bubble chat-bubble-user';
         bubble.style.alignSelf = 'flex-end';
         bubble.style.maxWidth = '75%';
         bubble.innerHTML = `
             <div class="chat-bubble-meta">You &bull; <span class="notranslate" translate="no">${escapeHtml(timeStr)}</span></div>
-            <p style="font-size: 1.05rem; line-height: 1.5; margin: 0;">${escapeHtml(text)}</p>
+            <p style="font-size: 1.05rem; line-height: 1.5; margin: 0;">${escapeHtml(query).replace(/\n/g, '<br>')}</p>
         `;
         chatContainer.appendChild(bubble);
         scrollToBottom();
     }
 
     function renderLoaderBubble() {
+        if (!chatContainer) return null;
         const loader = document.createElement('div');
-        loader.id = 'activeAiLoader';
         loader.className = 'chat-bubble chat-bubble-ai';
         loader.style.alignSelf = 'flex-start';
         loader.style.maxWidth = '85%';
@@ -89,7 +82,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         loader.innerHTML = `
             <div class="chat-bubble-meta" style="display: flex; align-items: center; gap: 0.4rem;">
-                <span class="notranslate" translate="no">&#129302;</span>
                 <strong class="notranslate" translate="no">LifeGPT Host</strong> &bull;
                 <span style="color: var(--color-primary); font-weight: 600;">Searching collective wisdom...</span>
             </div>
@@ -124,10 +116,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const formattedAnswer = escapeHtml(data.answer || '').replace(/\n/g, '<br>');
 
-        // Context badge shown on follow-up responses
         const contextBadge = intentType === 'FOLLOW_UP'
             ? `<span style="font-size:0.72rem; font-weight:600; padding:0.1rem 0.45rem; border-radius:999px; background:#ede9fe; color:#7c3aed; margin-left:0.4rem;" title="LifeGPT understood this as a follow-up and used conversation context">
-                &#128279; Context-aware
+                Context-aware
               </span>`
             : '';
 
@@ -156,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
             sourcesHtml = `
                 <details style="margin-top: 0.65rem; border-top: 1px dashed var(--color-border); padding-top: 0.45rem;">
                     <summary style="font-size: 0.8rem; font-weight: 600; color: var(--color-primary); cursor: pointer; user-select: none;">
-                        View supporting experiences (<span class="notranslate" translate="no">${srcCount}</span>) &darr;
+                        View supporting experiences (<span class="notranslate" translate="no">${data.sources.length}</span>) &darr;
                     </summary>
                     <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;">
                         ${itemsHtml}
@@ -165,19 +156,13 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
 
-        // Developer debug panel (shown when debug=1 in URL)
         let debugHtml = '';
-        if (debugModeEnabled && data.debug) {
-            const d = data.debug;
-            const metrics = d.retrieval_metrics || {};
-            const concepts = (d.context_concepts || []).join(', ') || 'none';
+        if (data.debug_metrics) {
+            const metrics = data.debug_metrics;
             debugHtml = `
-                <details style="margin-top:0.5rem; border-top:1px dashed #cbd5e1; padding-top:0.4rem;" open>
-                    <summary style="font-size:0.75rem; font-weight:700; color:#64748b; cursor:pointer;">&#128295; Debug Info</summary>
-                    <div style="font-size:0.73rem; font-family:monospace; color:#475569; margin-top:0.3rem; display:grid; grid-template-columns:auto 1fr; gap:0.15rem 0.6rem;">
-                        <span style="font-weight:600;">Intent:</span><span>${escapeHtml(d.intent_type)} (${Math.round((d.intent_confidence||0)*100)}% confidence &mdash; ${escapeHtml(d.intent_reason||'')})</span>
-                        <span style="font-weight:600;">Contextual Query:</span><span style="font-style:italic;">&ldquo;${escapeHtml(d.contextual_query||'same as original')}&rdquo;</span>
-                        <span style="font-weight:600;">Context Concepts:</span><span>${escapeHtml(concepts)}</span>
+                <details style="margin-top: 0.5rem; border-top: 1px dashed #cbd5e1; padding-top: 0.35rem;">
+                    <summary style="font-size:0.75rem; font-weight:700; color:#64748b; cursor:pointer;">Debug Info</summary>
+                    <div style="font-family:monospace; font-size:0.72rem; color:#475569; background:#f1f5f9; padding:0.5rem; border-radius:4px; margin-top:0.35rem; display:grid; grid-template-columns:auto 1fr; gap:0.2rem 0.6rem;">
                         <span style="font-weight:600;">Mode:</span><span>${escapeHtml(metrics.context_mode||'standalone')}</span>
                         <span style="font-weight:600;">Best Semantic:</span><span>${(metrics.best_semantic_score||0).toFixed(4)}</span>
                         <span style="font-weight:600;">Best Keyword:</span><span>${(metrics.best_keyword_score||0).toFixed(4)}</span>
@@ -191,7 +176,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         bubble.innerHTML = `
             <div class="chat-bubble-meta" style="display: flex; align-items: center; gap: 0.4rem; flex-wrap:wrap;">
-                <span><span class="notranslate" translate="no">&#129302;</span></span>
                 <strong class="notranslate" translate="no">LifeGPT Host</strong> &bull;
                 <span class="notranslate" translate="no">${escapeHtml(timeStr)}</span>
                 ${contextBadge}
@@ -202,7 +186,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <div style="margin-top: 0.85rem; padding: 0.85rem 1rem; background: #f8fafc; border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.5rem;">
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
-                        <span class="notranslate" translate="no">&#127919;</span>
                         <strong style="font-size: 0.88rem; color: var(--color-primary);"><span class="notranslate" translate="no">LifeGPT</span> Grounding Score:</strong>
                         <span class="notranslate" translate="no" style="font-size: 0.82rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 999px; background: ${escapeHtml(confBadge)}; color: ${escapeHtml(confColor)};">
                             ${score}% &bull; ${escapeHtml(confLabel)}
@@ -227,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ` : ''}
 
             <div class="citation-tag notranslate" translate="no">
-                <span class="notranslate" translate="no">&#128220;</span> AI-assisted search across contributed stories
+                AI-assisted search across contributed stories
             </div>
         `;
 
@@ -262,12 +245,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 csrf_token: csrf
             };
 
-            // Attach active conversation_id for context continuity
             if (activeConversationId) {
                 requestBody.conversation_id = activeConversationId;
             }
 
-            // Attach debug flag if enabled
             if (debugModeEnabled) {
                 requestBody.debug = 1;
             }
@@ -301,20 +282,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(data.error || 'Failed to retrieve wisdom response.');
             }
 
-            // Update active conversation_id from response
             if (data.conversation_id) {
                 activeConversationId = data.conversation_id;
                 sessionStorage.setItem('lifegpt_conversation_id', activeConversationId);
-                // Update New Chat button to show active state
-                updateNewChatButton(true);
             }
 
             renderAiBubble(data, formatTimeNow());
-
-        } catch (err) {
-            if (loader && loader.parentNode) {
-                loader.parentNode.removeChild(loader);
-            }
 
         } catch (err) {
             if (loader && loader.parentNode) {
@@ -330,12 +303,12 @@ document.addEventListener('DOMContentLoaded', function() {
             errBubble.style.background = '#fff1f2';
             errBubble.style.borderColor = '#fecdd3';
             errBubble.innerHTML = `
-                <div class="chat-bubble-meta" style="color: #be123c;">⚠️ Search Notice &bull; ${escapeHtml(formatTimeNow())}</div>
+                <div class="chat-bubble-meta" style="color: #be123c;">Search Notice &bull; ${escapeHtml(formatTimeNow())}</div>
                 <p style="color: #9f1239; margin-bottom: 0.5rem;">
                     Could not complete search: <strong>${escapeHtml(err.message)}</strong>
                 </p>
                 <button type="button" class="btn btn-outline" style="padding: 0.35rem 0.85rem; font-size: 0.85rem;" onclick="window.askQuestion('${escapeHtml(query)}')">
-                    🔄 Retry Question
+                    Retry Question &rarr;
                 </button>
             `;
             chatContainer.appendChild(errBubble);
@@ -360,55 +333,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Expose global askQuestion helper (for suggestions, chips, cards)
+    // Expose global askQuestion helper
     window.askQuestion = function(q) {
+        if (!q) return;
+        const queryText = String(q).trim();
+        if (!queryText) return;
         if (askQueryInput) {
-            askQueryInput.value = q;
+            askQueryInput.value = queryText;
         }
-        executeAsk(q);
+        executeAsk(queryText);
     };
 
     // --- New Chat button ---
-    function updateNewChatButton(hasHistory) {
-        const btn = document.getElementById('newChatBtn');
-        if (!btn) return;
-        if (hasHistory) {
-            btn.style.opacity = '1';
-            btn.style.pointerEvents = 'auto';
-        }
-    }
-
     const newChatBtn = document.getElementById('newChatBtn');
     if (newChatBtn) {
-        newChatBtn.addEventListener('click', async function() {
-            const csrf = getCsrfToken();
-            try {
-                const res = await fetch(`${appUrl}/api/index.php?action=new_chat`, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-Token': csrf
-                    },
-                    body: JSON.stringify({ csrf_token: csrf })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    activeConversationId = data.conversation_id;
-                    sessionStorage.setItem('lifegpt_conversation_id', activeConversationId);
-                    // Clear chat UI
-                    if (chatContainer) {
-                        chatContainer.innerHTML = `
-                            <div style="text-align:center; padding:2rem; color:var(--color-text-muted); font-style:italic; font-size:0.95rem;">
-                                &#128257; New conversation started. Ask LifeGPT anything.
-                            </div>
-                        `;
-                    }
-                    updateNewChatButton(false);
-                }
-            } catch(e) {
-                console.error('New Chat error:', e);
+        newChatBtn.addEventListener('click', function(e) {
+            sessionStorage.removeItem('lifegpt_conversation_id');
+            const href = newChatBtn.getAttribute('href');
+            if (!href || href === '#' || href === 'javascript:void(0)') {
+                e.preventDefault();
+                window.location.href = `${appUrl}/ask/?action=new_chat`;
             }
         });
     }

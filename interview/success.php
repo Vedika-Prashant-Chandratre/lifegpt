@@ -9,7 +9,7 @@ require_once __DIR__ . '/../includes/header.php';
 
 <main class="container" style="max-width: 700px; padding: 4rem 1rem; text-align: center;">
     <div style="background: #ffffff; border-radius: var(--radius-lg); padding: 3rem 2rem; box-shadow: var(--shadow-md); border-top: 6px solid var(--color-primary);">
-        <div style="font-size: 4rem; margin-bottom: 1rem;">&#127881;</div>
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--color-mint-bg); color: var(--color-primary); font-size: 2rem; font-weight: bold; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto;">&#10003;</div>
         
         <h1 style="font-size: 2.25rem; color: var(--color-primary); margin-bottom: 1rem;">
             Story Successfully Archived

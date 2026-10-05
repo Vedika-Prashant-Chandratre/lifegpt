@@ -51,6 +51,43 @@ $pageTitle = "Member Authentication";
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
+<style>
+    .pw-toggle-wrap {
+        position: relative;
+    }
+    .pw-toggle-wrap input {
+        padding-right: 2.75rem;
+    }
+    .pw-toggle-btn {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.25rem;
+        color: var(--color-text-muted);
+        font-size: 1.15rem;
+        line-height: 1;
+    }
+    .pw-toggle-btn:hover {
+        color: var(--color-primary);
+    }
+    .pw-criteria-item {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-bottom: 0.15rem;
+        transition: color 0.2s ease;
+    }
+    .pw-criteria-item .pw-icon {
+        font-size: 0.85rem;
+        width: 1.1rem;
+        text-align: center;
+    }
+</style>
+
 <div style="max-width: 520px; margin: 2rem auto 4rem auto;">
     <div class="card" style="border-top: 6px solid var(--color-primary); padding: 2.5rem;">
         
@@ -59,11 +96,9 @@ require_once __DIR__ . '/../includes/header.php';
             <button type="button" class="btn <?php echo ($mode === 'login') ? 'btn-primary' : 'btn-outline'; ?>" id="tabLoginBtn" onclick="switchAuthTab('login')" style="flex: 1; border-radius: var(--border-radius-pill);">
                 Log In
             </button>
-           <a href="<?php echo APP_URL; ?>/account/register.php"
-   class="btn btn-outline"
-   style="flex: 1; border-radius: var(--border-radius-pill); justify-content: center;">
-    Sign Up / Register
-</a>
+            <button type="button" class="btn <?php echo ($mode === 'register') ? 'btn-primary' : 'btn-outline'; ?>" id="tabRegisterBtn" onclick="switchAuthTab('register')" style="flex: 1; border-radius: var(--border-radius-pill);">
+                Sign Up / Register
+            </button>
         </div>
 
         <?php if (!empty($error)): ?>
@@ -82,39 +117,22 @@ require_once __DIR__ . '/../includes/header.php';
                 <input type="email" id="login_email" name="email" class="form-control" placeholder="name@example.com" required>
             </div>
 
-           <div class="form-group">
-    <label for="login_password" class="form-label">Password</label>
+            <div class="form-group">
+                <label for="login_password" class="form-label">Password</label>
+                <div class="pw-toggle-wrap">
+                    <input type="password" id="login_password" name="password" class="form-control" placeholder="Enter your password" required>
+                    <button type="button" class="pw-toggle-btn" onclick="togglePassword('login_password', this)" title="Show/Hide Password">
+                        <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
+            </div>
 
-    <div style="position: relative;">
-        <input type="password" id="login_password" name="password"
-               class="form-control"
-               placeholder="Enter your password"
-               required
-               style="padding-right: 3rem;">
+            <div style="text-align: right; margin-bottom: 1rem;">
+                <a href="<?php echo APP_URL; ?>/account/forgot-password.php" style="font-size: 0.9rem; color: var(--color-primary); text-decoration: none; font-weight: 500;">Forgot Password?</a>
+            </div>
 
-        <button type="button"
-                onclick="togglePassword('login_password', this)"
-                aria-label="Show password"
-                style="position: absolute; right: 0.75rem; top: 50%;
-                       transform: translateY(-50%);
-                       border: none; background: transparent;
-                       cursor: pointer; padding: 0;">
-            <svg width="20" height="20" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
-                <circle cx="12" cy="12" r="3"/>
-            </svg>
-        </button>
-    </div>
-</div>
-            <div style="text-align: right; margin-top: -0.5rem; margin-bottom: 0.75rem;">
-    <a href="<?php echo APP_URL; ?>/account/forgot-password.php" style="font-size: 0.9rem; font-weight: 600;">
-        Forgot Password?
-    </a>
-</div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
                 Log In to LifeGPT
             </button>
         </form>
@@ -136,20 +154,26 @@ require_once __DIR__ . '/../includes/header.php';
 
             <div class="form-group">
                 <label for="reg_password" class="form-label">Password</label>
-                <input type="password" id="reg_password" name="password" class="form-control" placeholder="Minimum 8 characters" required minlength="8" onkeyup="validatePasswordCriteria(this.value)">
+                <div class="pw-toggle-wrap">
+                    <input type="password" id="reg_password" name="password" class="form-control" placeholder="Min 8 chars, uppercase, lowercase, number, special" required minlength="8" onkeyup="validatePasswordCriteria(this.value)">
+                    <button type="button" class="pw-toggle-btn" onclick="togglePassword('reg_password', this)" title="Show/Hide Password">
+                        <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="eye-closed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
             </div>
 
             <!-- Password Criteria Validation Box -->
-<div id="passwordCriteriaBox" style="background: var(--color-bg-base); padding: 0.85rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1.25rem; border: 1px solid var(--color-border);">
-    <strong style="color: var(--color-primary); display: block; margin-bottom: 0.35rem;">Password Requirements:</strong>
-    <div id="critLen" style="color: #9CA3AF;">• At least 8 characters long</div>
-    <div id="critUpper" style="color: #9CA3AF;">• At least one uppercase letter</div>
-    <div id="critLower" style="color: #9CA3AF;">• At least one lowercase letter</div>
-    <div id="critNumber" style="color: #9CA3AF;">• At least one number</div>
-    <div id="critSpecial" style="color: #9CA3AF;">• At least one special character</div>
-</div>
+            <div id="passwordCriteriaBox" style="background: var(--color-bg-base); padding: 0.85rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1.25rem; border: 1px solid var(--color-border);">
+                <strong style="color: var(--color-primary); display: block; margin-bottom: 0.35rem;">Password Requirements:</strong>
+                <div class="pw-criteria-item" id="critLen"><span class="pw-icon">&#9675;</span> At least 8 characters long</div>
+                <div class="pw-criteria-item" id="critUpper"><span class="pw-icon">&#9675;</span> At least one uppercase letter (A-Z)</div>
+                <div class="pw-criteria-item" id="critLower"><span class="pw-icon">&#9675;</span> At least one lowercase letter (a-z)</div>
+                <div class="pw-criteria-item" id="critNum"><span class="pw-icon">&#9675;</span> At least one number (0-9)</div>
+                <div class="pw-criteria-item" id="critSpecial"><span class="pw-icon">&#9675;</span> At least one special character (@, #, $, !, etc.)</div>
+            </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;" id="registerSubmitBtn">
                 Create Account & Continue
             </button>
         </form>
@@ -157,7 +181,7 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Guest Shortcut Link -->
         <div style="text-align: center; margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border);">
             <a href="<?php echo APP_URL; ?>/interview/start.php" class="btn btn-outline" style="width: 100%; justify-content: center;">
-                Continue as Guest (No Account Required) →
+                Continue as Guest (No Account Required) &rarr;
             </a>
         </div>
     </div>
@@ -187,76 +211,41 @@ function switchAuthTab(target) {
     }
 }
 
-function togglePassword(inputId, button) {
+function togglePassword(inputId, btn) {
     const input = document.getElementById(inputId);
-
-    const eyeOpen = `
-        <svg width="20" height="20" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
-            <circle cx="12" cy="12" r="3"/>
-        </svg>`;
-
-    const eyeOff = `
-        <svg width="20" height="20" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 3l18 18"/>
-            <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/>
-            <path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a16.4 16.4 0 0 1-2.1 3.2"/>
-            <path d="M6.6 6.6C3.6 8.6 2 12 2 12s3.5 8 10 8a9.8 9.8 0 0 0 4.1-.9"/>
-        </svg>`;
-
+    const eyeOpen = btn.querySelector('.eye-open');
+    const eyeClosed = btn.querySelector('.eye-closed');
     if (input.type === 'password') {
         input.type = 'text';
-        button.innerHTML = eyeOff;
-        button.setAttribute('aria-label', 'Hide password');
+        eyeOpen.style.display = 'none';
+        eyeClosed.style.display = 'inline';
     } else {
         input.type = 'password';
-        button.innerHTML = eyeOpen;
-        button.setAttribute('aria-label', 'Show password');
+        eyeOpen.style.display = 'inline';
+        eyeClosed.style.display = 'none';
     }
 }
 
 function validatePasswordCriteria(val) {
-    const criteria = [
-        {
-            id: 'critLen',
-            valid: val.length >= 8,
-            text: 'At least 8 characters long'
-        },
-        {
-            id: 'critUpper',
-            valid: /[A-Z]/.test(val),
-            text: 'At least one uppercase letter'
-        },
-        {
-            id: 'critLower',
-            valid: /[a-z]/.test(val),
-            text: 'At least one lowercase letter'
-        },
-        {
-            id: 'critNumber',
-            valid: /[0-9]/.test(val),
-            text: 'At least one number'
-        },
-        {
-            id: 'critSpecial',
-            valid: /[^A-Za-z0-9]/.test(val),
-            text: 'At least one special character'
-        }
+    const checks = [
+        { id: 'critLen',     test: val.length >= 8 },
+        { id: 'critUpper',   test: /[A-Z]/.test(val) },
+        { id: 'critLower',   test: /[a-z]/.test(val) },
+        { id: 'critNum',     test: /[0-9]/.test(val) },
+        { id: 'critSpecial', test: /[^A-Za-z0-9]/.test(val) },
     ];
 
-    criteria.forEach(function (criterion) {
-        const element = document.getElementById(criterion.id);
-
-        if (criterion.valid) {
-            element.style.color = 'var(--color-success)';
-            element.innerHTML = '✔ ' + criterion.text;
+    let allPassed = true;
+    checks.forEach(function(c) {
+        const el = document.getElementById(c.id);
+        const icon = el.querySelector('.pw-icon');
+        if (c.test) {
+            el.style.color = '#16a34a';
+            icon.innerHTML = '&#10003;';
         } else {
-            element.style.color = '#9CA3AF';
-            element.innerHTML = '• ' + criterion.text;
+            el.style.color = '#9CA3AF';
+            icon.innerHTML = '&#9675;';
+            allPassed = false;
         }
     });
 }
