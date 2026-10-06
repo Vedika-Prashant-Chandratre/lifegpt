@@ -23,13 +23,13 @@ class OpenAIClient {
         // Auto-detect provider based on key prefix
         $isGroq = (strpos($apiKey, 'gsk_') === 0);
         
-       if ($isGroq) {
-    $url = 'https://api.groq.com/openai/v1/chat/completions';
-    $model = 'openai/gpt-oss-20b';
-} else {
-    $url = 'https://api.openai.com/v1/chat/completions';
-    $model = 'gpt-4o-mini';
-}
+        if ($isGroq) {
+            $url = 'https://api.groq.com/openai/v1/chat/completions';
+            $model = 'llama3-8b-8192';  // Fast, high-limit free-tier model
+        } else {
+            $url = 'https://api.openai.com/v1/chat/completions';
+            $model = 'gpt-4o-mini';
+        }
 
         
         // Prepare payload
@@ -37,7 +37,7 @@ class OpenAIClient {
             'model' => $model,
             'messages' => $messages,
             'temperature' => 0.7,
-            'max_tokens' => 1800
+            'max_tokens' => 900   // Reduced to stay within Groq TPM limits
         ];
 
         // If structured output is requested, enforce JSON schema (or JSON mode for Groq)
@@ -82,7 +82,7 @@ class OpenAIClient {
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $err = curl_error($ch);
         curl_close($ch);
-        
+
         $endTime = microtime(true);
         $latencyMs = round(($endTime - $startTime) * 1000);
 
@@ -91,10 +91,26 @@ class OpenAIClient {
             throw new Exception("cURL Error: " . $err);
         }
 
+        // Retry once on rate-limit (429) with a short backoff
+        if ($httpCode === 429) {
+            error_log("Groq rate limit hit (429). Retrying after 3 seconds...");
+            sleep(3);
+            $ch2 = curl_init($url);
+            curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch2, CURLOPT_POST, true);
+            curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch2, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
+            $response = curl_exec($ch2);
+            $httpCode  = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+            curl_close($ch2);
+        }
+
         if ($httpCode !== 200) {
             self::logUsage('error', $model, 0, $latencyMs, 'failed_code_' . $httpCode, 0.0);
             error_log("API returned error code $httpCode. Response: " . $response);
-            throw new Exception("API Error: Received HTTP status code " . $httpCode);
+            throw new Exception("API Error: Received HTTP status code " . $httpCode . ". Body: " . substr($response, 0, 300));
         }
 
         $data = json_decode($response, true);

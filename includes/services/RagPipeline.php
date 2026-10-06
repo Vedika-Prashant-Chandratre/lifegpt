@@ -132,27 +132,24 @@ class RagPipeline {
             return $resp;
         }
 
-        // ---- STEP 7: Construct story-level context text ----
+        // ---- STEP 7: Construct story-level context text (top 4 stories to stay within token limits) ----
         $contextText = '';
-        foreach ($retrieval['stories'] as $i => $st) {
+        foreach (array_slice($retrieval['stories'], 0, 4) as $i => $st) {
             $topic    = $st['topic_name'] ?? 'Life Experience';
             $excerpts = $st['structured_excerpts'] ?? [];
 
             $contextText .= '--- STORY ' . ($i + 1) . " (Topic: {$topic}) ---\n";
             if (!empty($excerpts['summary'])) {
-                $contextText .= 'Summary: '        . $excerpts['summary']        . "\n";
-            }
-            if (!empty($excerpts['turning_point'])) {
-                $contextText .= 'Turning Point: '  . $excerpts['turning_point']  . "\n";
+                $contextText .= 'Summary: '        . mb_substr($excerpts['summary'], 0, 250)        . "\n";
             }
             if (!empty($excerpts['lesson'])) {
-                $contextText .= 'Key Lesson: '     . $excerpts['lesson']         . "\n";
+                $contextText .= 'Key Lesson: '     . mb_substr($excerpts['lesson'], 0, 200)         . "\n";
             }
             if (!empty($excerpts['advice'])) {
-                $contextText .= 'Advice: '         . $excerpts['advice']         . "\n";
+                $contextText .= 'Advice: '         . mb_substr($excerpts['advice'], 0, 200)         . "\n";
             }
             if (!empty($excerpts['quote'])) {
-                $contextText .= 'Quote: '          . $excerpts['quote']          . "\n";
+                $contextText .= 'Quote: '          . mb_substr($excerpts['quote'], 0, 150)          . "\n";
             }
             $contextText .= "\n";
         }
@@ -215,33 +212,21 @@ class RagPipeline {
             : '';
 
         $systemPrompt = <<<PROMPT
-You are Ask LifeGPT — an AI powered by a real archive of human life stories, wisdom, and lived experience.
+You are Ask LifeGPT — an AI powered by a real archive of human life stories and lived wisdom.
 
-Your job is to answer the user's question like a thoughtful, well-read friend who has heard thousands of real human stories — NOT like a research assistant reading out case summaries.
+Answer the user's question like a thoughtful friend who has heard thousands of real stories — not a report reader.
 
-HOW TO SOUND:
-- Speak naturally and directly. Not every answer needs to start with a long framing paragraph.
-- Vary your response length to match the question. A sharp focused question gets a direct answer. A big open-ended question gets more depth. Never pad to fill space.
-- DO NOT open with "Career growth is..." or "It can feel like..." style generic scene-setting every single time. Get to the point.
-- DO NOT close every answer with a bullet-list of "practical steps" or "putting these insights together..." — only add a list when it genuinely helps.
-- Do NOT end with the same closing pattern every time. Each answer should feel fresh and unique.
+STYLE:
+- Be direct. Get to the point fast.
+- Vary length with the question. No padding.
+- No generic scene-setting openers. No identical closing bullet lists every time.
+- Synthesize the stories in your own voice. NEVER say "A contributor shared..." or "Several stories highlighted..." — speak the insight directly: "What actually works is...", "The honest pattern is...", "What most people discover..."
+- No markdown (no **, ##, bullet dashes). Write in clean paragraphs.
 
-HOW TO USE THE STORIES:
-- The retrieved experiences are your source material. Synthesize them into your own voice — do NOT quote them like a report.
-- NEVER say "A contributor shared...", "People who went through this reported...", "Several stories highlighted...", "One contributor reflected..." — this sounds clinical and repetitive.
-- Instead, speak the insight directly: "What actually works, from what we've seen, is...", "The honest pattern is...", "Something that comes up again and again is...", "Here's the thing most people discover..."
-- Draw on the specific situations, decisions, and turning points from the stories — but blend them naturally, not as numbered examples.
-
-FOR FOLLOW-UP QUESTIONS:
-- Stay tightly on the topic from the conversation history. Do not retrieve or introduce themes from unrelated life domains.
-- Answer only what was asked. Do not repeat advice already given.
-- Build on what was said before, not re-explain it.
-
-STRICT RULES:
-1. Answer ONLY based on what the retrieved stories actually support. Do not invent experiences.
-2. NEVER use real names. Refer to people as "someone who went through this", "people in this situation", etc.
-3. No markdown formatting (no **, ##, bullet points with dashes). Write in clean readable paragraphs.
-4. Return a JSON object with a single key: {"answer": "...your full response here..."}
+RULES:
+1. Only answer based on the retrieved stories. Do not invent experiences.
+2. Never use real names. Say "someone who went through this", "people in this situation", etc.
+3. Return ONLY a JSON object: {"answer": "...your response here..."}
 {$followUpNote}
 {$langInstruction}
 {$conversationContextBlock}
@@ -367,18 +352,60 @@ PROMPT;
     }
 
     private static function buildFallbackSynthesizedAnswer(array $stories, string $lang): string {
-        $lessons = [];
-        foreach ($stories as $s) {
-            if (!empty($s['structured_excerpts']['lesson'])) {
-                $lessons[] = $s['structured_excerpts']['lesson'];
+        // Collect rich excerpts from the top retrieved stories
+        $summaries = [];
+        $adviceList = [];
+        $quotes = [];
+
+        foreach (array_slice($stories, 0, 4) as $s) {
+            $ex = $s['structured_excerpts'] ?? [];
+            if (!empty($ex['summary'])) {
+                $summaries[] = trim($ex['summary']);
+            }
+            if (!empty($ex['advice'])) {
+                $adviceList[] = trim($ex['advice']);
+            } elseif (!empty($ex['lesson'])) {
+                $adviceList[] = trim($ex['lesson']);
+            }
+            if (!empty($ex['quote'])) {
+                $quotes[] = trim($ex['quote']);
             }
         }
-        $combined = implode(' ', array_slice($lessons, 0, 2));
 
-        return match($lang) {
-            'hi' => "हमारे संग्रह में दर्ज वास्तविक जीवन अनुभवों के आधार पर: " . $combined,
-            'mr' => "आमच्या संग्रहातील वास्तविक जीवन अनुभवांवर आधारित: " . $combined,
-            default => "Based on the real life experiences recorded in our archive: " . $combined
-        };
+        // Build a natural paragraph answer from whatever we have
+        $parts = [];
+
+        if (!empty($summaries)) {
+            // Combine up to 2 summaries into an intro paragraph
+            $intro = implode(' ', array_slice($summaries, 0, 2));
+            $parts[] = $intro;
+        }
+
+        if (!empty($adviceList)) {
+            // Lead the advice section naturally
+            $adviceIntros = [
+                'What comes through clearly is: ',
+                'The pattern that emerges is: ',
+                'The honest takeaway here is: ',
+                'What actually helps, based on these experiences: ',
+            ];
+            $intro = $adviceIntros[array_rand($adviceIntros)];
+            $parts[] = $intro . implode(' ', array_slice($adviceList, 0, 2));
+        }
+
+        if (!empty($quotes)) {
+            $parts[] = 'As one person put it: "' . $quotes[0] . '"';
+        }
+
+        if (empty($parts)) {
+            // Ultimate fallback if excerpts are truly empty
+            return match($lang) {
+                'hi' => "इस विषय पर हमारे संग्रह में कुछ अनुभव दर्ज हैं, लेकिन अभी इनसे एक पूरा उत्तर बनाना संभव नहीं हो पाया। कृपया कुछ देर बाद पुनः प्रयास करें।",
+                'mr' => "या विषयावर आमच्या संग्रहात काही अनुभव आहेत, परंतु सध्या त्यांचे उत्तर तयार करणे शक्य झाले नाही. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा.",
+                default => "We have relevant experiences in our archive on this topic but couldn't synthesize them right now. Please try again in a moment.",
+            };
+        }
+
+        return implode("\n\n", $parts);
     }
 }
