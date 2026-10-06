@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * LifeGPT - Simple Localization / String Helper
  * Clean English-first wisdom labels without emojis or broken characters.
@@ -18,7 +18,6 @@ function getLangStrings(string $lang = 'en'): array {
             'ask_topics' => 'Browse by Topic', 'ask_common_q' => 'Common Questions',
             'topic_career' => 'Career &amp; Work',
             'topic_family' => 'Family &amp; Relationships',
-            'topic_turning' => 'Turning Points &amp; Resilience',
             'topic_health' => 'Health &amp; Aging',
             'topic_money' => 'Money &amp; Retirement',
             'topic_purpose' => 'Life Lessons &amp; Purpose',
@@ -29,28 +28,26 @@ function getLangStrings(string $lang = 'en'): array {
             'no_account' => 'No account or login required.', 'return_home' => '&larr; Return to Homepage',
             
             // Demo Questions (Derived from high-grounding RAG knowledge chunks)
-            'q1' => 'What lessons do people wish they knew in their 20s?',
-            'q2' => 'How to change careers later in life?',
-            'q3' => 'How to bounce back from major failure?',
-            'q4' => 'What do people regret most about money?',
-            'q5' => 'How to maintain healthy relationships & marriage?',
-            'q6' => 'What is the best parenting and family advice?',
-            'q7' => 'How do people cope with grief and loss?',
-            'q8' => 'How to prepare mentally and financially for retirement?',
-            'q9' => 'How do people find true purpose and meaning?',
-            'q10' => 'What habits help people age gracefully & stay healthy?',
+            'q1' => 'How to change careers later in life?',
+            'q2' => 'How to bounce back from major failure?',
+            'q3' => 'What do people regret most about money?',
+            'q4' => 'How to maintain healthy relationships & marriage?',
+            'q5' => 'What is the best parenting and family advice?',
+            'q6' => 'How do people cope with grief and loss?',
+            'q7' => 'How to prepare mentally and financially for retirement?',
+            'q8' => 'How do people find true purpose and meaning?',
+            'q9' => 'What habits help people age gracefully & stay healthy?',
             
             // Full Queries sent to RAG pipeline on click
-            'q1_full' => 'What is the most important life lesson older adults wish they had learned earlier in their twenties?',
-            'q2_full' => 'What practical guidance do people share about changing careers, switching industries, or starting anew after 40?',
-            'q3_full' => 'What stories and practical lessons do people share about recovering from career failure, financial collapse, or setbacks?',
-            'q4_full' => 'What are the biggest financial regrets people have, and what money habits do they recommend for long-term security?',
-            'q5_full' => 'What advice do people share about maintaining healthy relationships, marriages, and resolving conflicts over the years?',
-            'q6_full' => 'What wisdom and practical advice do experienced parents share about raising children and supporting family?',
-            'q7_full' => 'What wisdom helps people navigate grief, bereavement, and finding strength after losing someone close?',
-            'q8_full' => 'What advice do retirees give about transitioning into retirement, managing money, and staying active and fulfilled?',
-            'q9_full' => 'How did experienced contributors find purpose, fulfillment, and peace of mind as they grew older?',
-            'q10_full' => 'What daily habits, lifestyle choices, and mindset shifts do older adults recommend for physical wellness and healthy aging?',
+            'q1_full' => 'What practical guidance do people share about changing careers, switching industries, or starting anew after 40?',
+            'q2_full' => 'What stories and practical lessons do people share about recovering from career failure, financial collapse, or setbacks?',
+            'q3_full' => 'What are the biggest financial regrets people have, and what money habits do they recommend for long-term security?',
+            'q4_full' => 'What advice do people share about maintaining healthy relationships, marriages, and resolving conflicts over the years?',
+            'q5_full' => 'What wisdom and practical advice do experienced parents share about raising children and supporting family?',
+            'q6_full' => 'What wisdom helps people navigate grief, bereavement, and finding strength after losing someone close?',
+            'q7_full' => 'What advice do retirees give about transitioning into retirement, managing money, and staying active and fulfilled?',
+            'q8_full' => 'How did experienced contributors find purpose, fulfillment, and peace of mind as they grew older?',
+            'q9_full' => 'What daily habits, lifestyle choices, and mindset shifts do older adults recommend for physical wellness and healthy aging?',
         ],
     ];
     return $strings['en'];

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * LifeGPT - Standalone Ask LifeGPT Chat Window
  */
@@ -142,9 +142,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <a href="javascript:void(0)" class="topic-q-link" data-question="What have people learned about maintaining healthy marriages, family bonds, and lasting friendships?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="font-size: 0.87rem; padding: 0.45rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_family']; ?>
                     </a>
-                    <a href="javascript:void(0)" class="topic-q-link" data-question="How do people successfully navigate major life turning points, overcome adversity, and adapt to change?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="font-size: 0.87rem; padding: 0.45rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
-                        <?php echo $t['topic_turning']; ?>
-                    </a>
+
                     <a href="javascript:void(0)" class="topic-q-link" data-question="What wisdom do older adults share about staying healthy, active, and mentally resilient as they age?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="font-size: 0.87rem; padding: 0.45rem 0.75rem; background: var(--color-bg-base); border-radius: var(--radius-sm); color: var(--color-text-main); text-decoration: none; cursor: pointer;">
                         <?php echo $t['topic_health']; ?>
                     </a>
@@ -172,7 +170,6 @@ require_once __DIR__ . '/../includes/header.php';
                         [$t['q7'], $t['q7_full']],
                         [$t['q8'], $t['q8_full']],
                         [$t['q9'], $t['q9_full']],
-                        [$t['q10'], $t['q10_full']],
                     ];
                     foreach ($commonQs as $q):
                     ?>
@@ -270,7 +267,7 @@ require_once __DIR__ . '/../includes/header.php';
                         </div>
 
                         <div class="card card-hover" data-question="What stories and practical lessons do people share about recovering from career failure, financial collapse, or setbacks?" onclick="window.askQuestion(this.getAttribute('data-question'))" style="cursor: pointer; text-align: left; padding: 1.25rem;">
-                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">Turning Points &amp; Resilience</strong>
+                            <strong style="font-size: 0.95rem; color: var(--color-primary); display: block; margin-bottom: 0.35rem;">Bouncing Back</strong>
                             <p class="text-sm" style="margin-bottom: 0;">&ldquo;How do people bounce back from major failure and setbacks?&rdquo;</p>
                         </div>
 
